@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # =============================================================
-#  deploy.sh — Déploiement / mise à jour sur le VPS
+#  deploy.sh — Déploiement / mise à jour sur le VPS (YunoHost)
 #
-#  Prérequis : Traefik tourne sur le réseau externe "traefik_proxy"
-#              avec un certresolver "letsencrypt" configuré.
+#  Le conteneur nginx tourne en local sur 127.0.0.1:8080.
+#  YunoHost gère le SSL + le reverse proxy pour reportfiles.jlax.fr
+#
+#  Étapes initiales (une seule fois, dans l'admin YunoHost) :
+#    1. Ajouter le domaine reportfiles.jlax.fr
+#    2. Activer Let's Encrypt pour ce domaine
+#    3. sudo cp yunohost-nginx.conf /etc/nginx/conf.d/reportfiles.jlax.fr.d/docs.conf
+#    4. sudo nginx -t && sudo systemctl reload nginx
 #
 #  Usage :
 #    bash deploy.sh
@@ -35,5 +41,7 @@ echo "▶  $COMPOSE up..."
 $COMPOSE -f docker-compose.deploy.yml up -d --pull always
 
 echo ""
-echo "✅  Portail disponible sur : https://reportfiles.jlax.fr"
+echo "✅  Conteneur démarré sur 127.0.0.1:8080"
+echo "    Portail accessible sur : https://reportfiles.jlax.fr"
+echo "    (si YunoHost est configuré — voir yunohost-nginx.conf)"
 echo ""

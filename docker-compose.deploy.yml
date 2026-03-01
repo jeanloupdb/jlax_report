@@ -4,18 +4,9 @@ services:
   jlax-docs:
     image: nginx:alpine
     restart: unless-stopped
+    ports:
+      # Écoute uniquement en local — YunoHost nginx proxifie depuis l'extérieur
+      - "127.0.0.1:8080:80"
     volumes:
       - ./:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jlax-docs.rule=Host(`reportfiles.jlax.fr`)"
-      - "traefik.http.routers.jlax-docs.entrypoints=websecure"
-      - "traefik.http.routers.jlax-docs.tls.certresolver=letsencrypt"
-      - "traefik.http.services.jlax-docs.loadbalancer.server.port=80"
-    networks:
-      - traefik_proxy
-
-networks:
-  traefik_proxy:
-    external: true
