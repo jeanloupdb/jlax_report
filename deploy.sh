@@ -26,9 +26,19 @@ git pull origin main
 # Écrire le .env si DOMAIN passé en argument
 echo "DOMAIN=$DOMAIN" > .env
 
+# Détecter docker compose V2 ou docker-compose V1
+if docker compose version &>/dev/null 2>&1; then
+  COMPOSE="docker compose"
+elif command -v docker-compose &>/dev/null; then
+  COMPOSE="docker-compose"
+else
+  echo "❌  docker compose introuvable (ni V1 ni V2)"
+  exit 1
+fi
+
 # Lancer ou redémarrer le conteneur
-echo "▶  docker compose up..."
-docker compose -f docker-compose.deploy.yml up -d --pull always
+echo "▶  $COMPOSE up..."
+$COMPOSE -f docker-compose.deploy.yml up -d --pull always
 
 echo ""
 echo "✅  Portail disponible sur : https://$DOMAIN"
