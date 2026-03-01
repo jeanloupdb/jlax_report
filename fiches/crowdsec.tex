@@ -1,0 +1,159 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{CrowdSec}
+\newcommand{\ficheCategorie}{IDS Collaboratif — Protection IP \& Réseau}
+\newcommand{\fichePack}{Core Pack}
+\newcommand{\fichePackColor}{colgreen}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche CrowdSec},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+CrowdSec est un système de détection d'intrusion (IDS) open-source collaboratif. Il analyse les logs des serveurs en temps réel, détecte les comportements malveillants (brute force, scan de ports, scraping), et partage automatiquement les IPs malveillantes avec une communauté mondiale de millions de serveurs. Le bouncer Traefik bloque automatiquement ces IPs avant qu'elles n'atteignent les applications.
+
+\begin{pointcle}
+  CrowdSec est \textbf{entièrement invisible} pour le client et fonctionne en mode \textit{set and forget} : une fois installé, il se met à jour automatiquement avec les nouvelles listes de menaces de la communauté mondiale.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{Invisible pour le client — il ne voit rien, et c'est exactement le but : aucune attaque n'arrive jusqu'à lui. Les tentatives d'intrusion sont bloquées avant même d'atteindre ses applications.}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item \textbf{Millions d'IPs} malveillantes connues bloquées automatiquement
+  \item Réduction des tentatives de brute force atteignant n8n/Grafana/Vaultwarden
+  \item Partage communautaire : une IP bloquée chez un client protège tous les autres
+  \item Coût : \textbf{0–10\,€/mois} selon la taille de la console cloud
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} Docker installé sur le VPS, Traefik comme reverse proxy.
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — CrowdSec + Bouncer Traefik}]
+version: "3.8"
+services:
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    restart: always
+    environment:
+      COLLECTIONS: "crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/linux"
+      ENROLL_KEY: ${CROWDSEC_ENROLL_KEY}
+    volumes:
+      - ./config/acquis.yaml:/etc/crowdsec/acquis.yaml
+      - crowdsec_db:/var/lib/crowdsec/data
+      - traefik_logs:/var/log/traefik:ro
+
+  bouncer-traefik:
+    image: docker.io/fbonalair/traefik-crowdsec-bouncer:latest
+    restart: always
+    environment:
+      CROWDSEC_BOUNCER_API_KEY: ${BOUNCER_API_KEY}
+      CROWDSEC_AGENT_HOST: crowdsec:8080
+    depends_on:
+      - crowdsec
+
+volumes:
+  crowdsec_db:
+  traefik_logs:
+    external: true
+\end{lstlisting}
+
+\begin{lstlisting}[style=terminal, caption={Initialisation et enrôlement dans la console cloud}]
+# Récupérer la clé d'enrôlement sur app.crowdsec.net
+# Après démarrage, enrôler l'instance :
+docker exec crowdsec cscli console enroll VOTRE_CLE_ENROLEMENT
+
+# Générer la clé API pour le bouncer
+docker exec crowdsec cscli bouncers add traefik-bouncer
+# Copier la clé → BOUNCER_API_KEY dans .env
+
+# Vérifier les décisions actives
+docker exec crowdsec cscli decisions list
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Fichier d'acquisition des logs (\texttt{acquis.yaml}) :}
+\begin{lstlisting}[style=yamlstyle]
+---
+filenames:
+  - /var/log/traefik/access.log
+labels:
+  type: traefik
+---
+filenames:
+  - /var/log/auth.log
+labels:
+  type: syslog
+\end{lstlisting}
+
+\textbf{Collections à installer selon le contexte :}
+\begin{lstlisting}[style=terminal]
+# Collections recommandées
+docker exec crowdsec cscli collections install \
+  crowdsecurity/traefik \
+  crowdsecurity/http-cve \
+  crowdsecurity/linux \
+  crowdsecurity/sshd \
+  crowdsecurity/wordpress  # si site WordPress client
+\end{lstlisting}
+
+\textbf{Intégration Traefik (middleware) :}
+\begin{lstlisting}[style=yamlstyle, caption={traefik/dynamic/crowdsec.yml}]
+http:
+  middlewares:
+    crowdsec-bouncer:
+      forwardAuth:
+        address: http://bouncer-traefik:8080/api/v1/forwardAuth
+        trustForwardHeader: true
+\end{lstlisting}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle}} \\
+\midrule
+Traefik & Le bouncer s'intègre comme middleware : bloque avant le routage \\
+\rowcolor{rowgray}
+Wazuh & Partage des IPs détectées → enrichissement mutuel des listes \\
+n8n & Notification Teams si pic d'attaques détecté (webhook CrowdSec) \\
+\rowcolor{rowgray}
+Grafana & Dashboard des IPs bloquées, pays d'origine, types d'attaque \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item CrowdSec tourne exclusivement sur le VPS — \textbf{zéro installation côté client}
+  \item Le bouncer Traefik bloque silencieusement : les attaquants reçoivent une erreur 403
+  \item La console cloud \texttt{app.crowdsec.net} n'est accessible qu'à Jlax Expertise
+  \item Le client ne voit que l'effet : ses services restent disponibles et performants
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier la console cloud : nombre de décisions actives et IPs bloquées
+    \item[$\square$] Contrôler que le bouncer Traefik est actif (\texttt{docker compose ps})
+    \item[$\square$] Mettre à jour les collections : \texttt{docker exec crowdsec cscli hub update}
+    \item[$\square$] Vérifier les faux positifs éventuels (IPs légitimes bloquées) dans les décisions
+    \item[$\square$] Consulter les métriques : \texttt{docker exec crowdsec cscli metrics}
+  \end{itemize}
+\end{checklist}
+
+\end{document}

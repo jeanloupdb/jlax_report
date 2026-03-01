@@ -1,0 +1,191 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Ollama}
+\newcommand{\ficheCategorie}{IA Locale — LLM sur Infrastructure Propre}
+\newcommand{\fichePack}{R\&D}
+\newcommand{\fichePackColor}{colgold}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Ollama},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Ollama est une plateforme open-source qui permet d'exécuter des modèles de langage (LLM) localement, sans aucune connexion à un service cloud. Les données ne quittent jamais le serveur. Idéal pour les clients sensibles (notaires, médecins, cabinets RH, défense) qui ne peuvent pas utiliser OpenAI ou Azure OpenAI. Phase R\&D : les performances varient selon les modèles et le GPU disponible.
+
+\begin{pointcle}
+  Ollama nécessite un \textbf{VPS avec GPU} pour des performances acceptables (\textit{Mistral 7B} en 5–10s/réponse). Sans GPU, les modèles légers (Phi-3, Gemma-2B) restent utilisables pour des tâches simples.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« J'utilise une IA pour analyser mes données financières et mes dossiers juridiques sensibles. Aucune donnée ne sort de mon réseau. Pas d'abonnement OpenAI, pas de cloud américain. Mon DPO et mon avocat ont validé sans réserve. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item \textbf{Confidentialité totale} : aucune donnée transmise à des tiers
+  \item Idéal secteurs sensibles : médical, juridique, notariat, défense, RH
+  \item Coût fixe (VPS GPU) vs coût variable (API par token)
+  \item Pas de dépendance à un fournisseur cloud pour les fonctions IA critiques
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Option A — VPS CPU uniquement (performances réduites) :}
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — Ollama (CPU)}]
+version: "3.8"
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: always
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"   # API interne uniquement (pas de Traefik ici)
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    restart: always
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - open_webui_data:/app/backend/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.openwebui.rule=Host(`ai-local.votredomaine.com`)"
+      - "traefik.http.routers.openwebui.tls.certresolver=letsencrypt"
+
+volumes:
+  ollama_models:
+  open_webui_data:
+\end{lstlisting}
+
+\textbf{Option B — VPS GPU (Hetzner GX2 ou équivalent) :}
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — Ollama (GPU NVIDIA)}]
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: always
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ollama_models:/root/.ollama
+\end{lstlisting}
+
+\begin{lstlisting}[style=terminal, caption={Télécharger et lancer les modèles}]
+# Modèles recommandés selon les ressources disponibles
+
+# CPU uniquement (RAM 8 GB+)
+docker exec ollama ollama pull phi3:mini        # 2.3 GB - tâches simples
+docker exec ollama ollama pull gemma2:2b        # 1.6 GB - très léger
+
+# GPU 8 GB VRAM
+docker exec ollama ollama pull mistral:7b       # 4.1 GB - polyvalent, excellent
+docker exec ollama ollama pull llama3.1:8b      # 4.7 GB - très bon en français
+
+# GPU 24 GB VRAM
+docker exec ollama ollama pull mixtral:8x7b     # 26 GB - niveau GPT-3.5
+
+# Vérifier les modèles disponibles
+docker exec ollama ollama list
+
+# Tester un modèle
+docker exec ollama ollama run mistral "Résume ce texte en 3 points :"
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Connexion Flowise → Ollama (RAG local) :}
+\begin{enumerate}
+  \item Flowise → Credentials → Add → \textbf{Ollama}
+  \item Base URL : \texttt{http://ollama:11434} (réseau Docker interne)
+  \item Model : \texttt{mistral:7b} (ou autre modèle téléchargé)
+  \item Embeddings locaux : utiliser \texttt{nomic-embed-text} (\texttt{ollama pull nomic-embed-text})
+\end{enumerate}
+
+\textbf{Connexion n8n → Ollama :}
+\begin{lstlisting}[style=terminal]
+# Node HTTP Request dans n8n
+POST http://ollama:11434/api/chat
+Content-Type: application/json
+
+{
+  "model": "mistral:7b",
+  "messages": [
+    {"role": "system", "content": "Tu es un assistant expert en droit français."},
+    {"role": "user", "content": "{{ $json.question }}"}
+  ],
+  "stream": false
+}
+\end{lstlisting}
+
+\textbf{Modèles recommandés par usage :}
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{3.5cm} p{2.5cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Usage}} & \textcolor{white}{\textbf{Modèle}} & \textcolor{white}{\textbf{Ressources}} \\
+\midrule
+Résumé/classification & mistral:7b & GPU 8GB \\
+\rowcolor{rowgray}
+Analyse juridique & llama3.1:8b & GPU 8GB \\
+Tâches légères (prod) & phi3:mini & CPU 8GB \\
+\rowcolor{rowgray}
+Embeddings RAG & nomic-embed-text & CPU 4GB \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle avec Ollama}} \\
+\midrule
+Flowise & RAG 100\% local : assistant sur documents sans cloud \\
+\rowcolor{rowgray}
+n8n & Appels API Ollama depuis les workflows (HTTP Request node) \\
+Open WebUI & Interface chat utilisateur pour tester les modèles \\
+\rowcolor{rowgray}
+Wazuh & Les logs Wazuh ne sortent pas du serveur pour être analysés par IA \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item Le client accède à l'assistant via Open WebUI ou Teams — pas besoin de connaître Ollama
+  \item Positionner Ollama comme « votre IA privée interne » — argument fort sur la confidentialité
+  \item Le surcoût GPU (30–80\,€/mois) est justifié pour les secteurs à haute confidentialité
+  \item En mode CPU : déconseillé en production au-delà de 10 requêtes/jour (trop lent)
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que le modèle principal répond correctement (test \texttt{ollama run})
+    \item[$\square$] Contrôler l'utilisation GPU/mémoire (\texttt{nvidia-smi} si GPU disponible)
+    \item[$\square$] Mettre à jour Ollama et les modèles : \texttt{docker compose pull \&\& ollama pull mistral:7b}
+    \item[$\square$] Vérifier l'espace disque des modèles (\texttt{docker exec ollama ollama list})
+    \item[$\square$] Tester l'intégration Flowise → Ollama : poser une question de test
+  \end{itemize}
+\end{checklist}
+
+\end{document}

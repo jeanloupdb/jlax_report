@@ -1,0 +1,142 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Secure Score API}
+\newcommand{\ficheCategorie}{Audit M365 — Score de Sécurité Microsoft}
+\newcommand{\fichePack}{Core Pack}
+\newcommand{\fichePackColor}{colgreen}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Secure Score API},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Microsoft Secure Score est un indicateur chiffré (0–100) qui évalue le niveau de sécurité d'un tenant Microsoft 365. L'API Graph permet de le récupérer automatiquement, de le suivre dans le temps, et de générer un rapport mensuel PDF avec les 3 actions prioritaires à réaliser. C'est un outil de \textbf{preuve objective} : le score monte chaque mois sous l'effet des actions Jlax — visible, mesurable, vendable.
+
+\begin{pointcle}
+  Secure Score est le seul outil qui \textbf{prouve en chiffres} l'amélioration de la sécurité M365 au fil du temps. C'est l'argument idéal lors des bilans annuels et pour justifier le renouvellement du contrat.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Je reçois chaque mois un rapport PDF avec mon score de sécurité Microsoft : 58/100 en janvier, 71/100 en mars, 84/100 en juin. Et les 3 actions concrètes qui feront monter ce score le mois prochain. Mon DSI voit les progrès en chiffres. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item Amélioration du score de \textbf{+20 à +40 points} en 6 mois d'accompagnement
+  \item Argument fort pour les assurances cyber (tarifs réduits avec score >70/100)
+  \item Outil de preuve chez les grands comptes et les appels d'offres
+  \item Conformité : traçabilité des améliorations sécurité dans le temps
+  \item Coût : \textbf{0\,€} — API gratuite incluse dans toute licence M365
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} Application Azure AD enregistrée (voir fiche Graph API) avec la permission \texttt{SecurityEvents.Read.All} (type Application, pas Delegated).
+
+\textbf{Workflow n8n de collecte mensuelle :}
+\begin{lstlisting}[style=terminal, caption={Appel API Graph — Secure Score}]
+# Endpoint Graph API Secure Score
+GET https://graph.microsoft.com/v1.0/security/secureScores?$top=1
+
+# Réponse (extrait JSON) :
+{
+  "value": [{
+    "currentScore": 71.35,
+    "maxScore": 100,
+    "percentageScore": 71.35,
+    "createdDateTime": "2026-03-01T00:00:00Z",
+    "controlScores": [
+      {
+        "controlName": "MFARegistrationV2",
+        "score": 9,
+        "description": "Ensure MFA registration is enabled"
+      }
+    ]
+  }]
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=yamlstyle, caption={Workflow n8n — collecte et rapport mensuel (structure)}]
+# Trigger: Cron 1er du mois à 8h
+# Node 1: HTTP Request → Graph API /security/secureScores?$top=1
+# Node 2: Extraction score actuel + top 3 recommandations
+# Node 3: Push vers InfluxDB (historique Grafana)
+# Node 4: Génération rapport PDF (via template HTML → PDF)
+# Node 5: Envoi email dirigeant avec PDF en pièce jointe
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Permissions requises dans Azure AD :}
+\begin{enumerate}
+  \item Azure AD → App registrations → JlaxExpertise-Automation
+  \item API permissions → Add → Microsoft Graph → Application permissions
+  \item Ajouter : \texttt{SecurityEvents.Read.All}
+  \item \textbf{Grant admin consent} (obligatoire pour les permissions Application)
+\end{enumerate}
+
+\textbf{Recommandations Secure Score à prioriser (impact/effort) :}
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{X p{1.8cm} p{2cm}}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Action}} & \textcolor{white}{\textbf{Points}} & \textcolor{white}{\textbf{Complexité}} \\
+\midrule
+Activer MFA pour tous les utilisateurs & +9 pts & Faible \\
+\rowcolor{rowgray}
+Bloquer l'authentification héritée (Basic Auth) & +7 pts & Faible \\
+Activer les Conditional Access Policies & +8 pts & Moyenne \\
+\rowcolor{rowgray}
+Configurer Microsoft Defender for Office 365 & +6 pts & Faible \\
+Activer la Protection de l'identité Azure AD & +5 pts & Faible \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle}} \\
+\midrule
+MS Graph API & Source des données Secure Score \\
+\rowcolor{rowgray}
+n8n & Orchestration : collecte mensuelle, génération rapport, envoi email \\
+InfluxDB / Grafana & Historique du score sur 12 mois, visualisation de la progression \\
+\rowcolor{rowgray}
+OpenAI API & Génération automatique des commentaires du rapport (interprétation IA) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item Collecte 100\% automatique : le client reçoit le rapport le 1er de chaque mois sans demander
+  \item L'API est gratuite : \textbf{pas de coût supplémentaire} pour le client
+  \item Le rapport PDF est au format branding Jlax Expertise — renforce la confiance
+  \item Le dirigeant partage souvent ce rapport avec son DSI ou son assureur cyber
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que le workflow n8n de collecte s'est exécuté le 1er du mois
+    \item[$\square$] Contrôler que le rapport PDF a bien été envoyé au dirigeant
+    \item[$\square$] Analyser les nouvelles recommandations du mois (score en baisse possible)
+    \item[$\square$] Mettre à jour le dashboard Grafana avec le nouveau score
+    \item[$\square$] Planifier les actions prioritaires pour le mois suivant
+  \end{itemize}
+\end{checklist}
+
+\end{document}

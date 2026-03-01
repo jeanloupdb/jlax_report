@@ -1,0 +1,149 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Metabase}
+\newcommand{\ficheCategorie}{Reporting Automatique — Tableaux de Bord Business}
+\newcommand{\fichePack}{Option Premium}
+\newcommand{\fichePackColor}{navylight}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Metabase},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Metabase est une plateforme de Business Intelligence open-source pensée pour les non-techniciens. Elle se connecte directement à la base de données Odoo ou à d'autres sources, et génère automatiquement des tableaux de bord, des rapports PDF, et des alertes email planifiées. Le dirigeant reçoit chaque lundi matin ses KPIs de la semaine sans rien demander.
+
+\begin{pointcle}
+  Metabase se distingue de Grafana par son orientation \textbf{business} : il parle \textit{chiffre d'affaires, clients, devis} plutôt que \textit{métriques serveur}. Les deux outils sont complémentaires dans la stack.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Tous les lundis matin à 8h, je reçois un email avec mes KPIs de la semaine : nouveaux clients, chiffre d'affaires, devis en cours, tickets ouverts. Je ne demande rien, c'est automatique. Je prépare ma réunion de direction en 5 minutes au lieu de 45. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item \textbf{45 min/semaine} récupérées sur la préparation de réunion et le reporting manuel
+  \item Vision unifiée de toutes les sources de données (Odoo, n8n, tableaux CSV)
+  \item Alertes automatiques si un KPI sort des seuils normaux (ex: CA < objectif mensuel)
+  \item Partage de dashboards interactifs avec les managers sans compte admin
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} Docker sur VPS-1 Core, accès à la base PostgreSQL d'Odoo (lecture seule), Traefik.
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — Metabase}]
+version: "3.8"
+services:
+  metabase:
+    image: metabase/metabase:latest
+    restart: always
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabase
+      MB_DB_PORT: 5432
+      MB_DB_USER: metabase
+      MB_DB_PASS: ${METABASE_DB_PASSWORD}
+      MB_DB_HOST: metabase-db
+      MB_EMAIL_FROM_ADDRESS: metabase@votredomaine.com
+      MB_SMTP_HOST: smtp.votredomaine.com
+      MB_SMTP_PORT: 587
+      MB_SMTP_USERNAME: ${SMTP_USER}
+      MB_SMTP_PASSWORD: ${SMTP_PASSWORD}
+    depends_on:
+      - metabase-db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.metabase.rule=Host(`data.votredomaine.com`)"
+      - "traefik.http.routers.metabase.tls.certresolver=letsencrypt"
+
+  metabase-db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: metabase
+      POSTGRES_USER: metabase
+      POSTGRES_PASSWORD: ${METABASE_DB_PASSWORD}
+    volumes:
+      - metabase_db:/var/lib/postgresql/data
+
+volumes:
+  metabase_db:
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Connexion à la base Odoo (lecture seule) :}
+\begin{lstlisting}[style=terminal, caption={Créer un utilisateur PostgreSQL lecture seule}]
+# Sur le serveur PostgreSQL Odoo
+psql -U postgres
+
+CREATE USER metabase_readonly WITH PASSWORD 'MotDePasseReadonly';
+GRANT CONNECT ON DATABASE odoo TO metabase_readonly;
+GRANT USAGE ON SCHEMA public TO metabase_readonly;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO metabase_readonly;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT ON TABLES TO metabase_readonly;
+\end{lstlisting}
+
+\textbf{Questions Metabase recommandées (KPIs Odoo) :}
+\begin{itemize}
+  \item CA du mois en cours (table \texttt{account\_invoice})
+  \item Nouveaux clients/contacts (table \texttt{res\_partner})
+  \item Devis en cours par commercial (table \texttt{sale\_order})
+  \item Tickets support ouverts (table \texttt{helpdesk\_ticket} si module activé)
+\end{itemize}
+
+\textbf{Configuration des rapports planifiés :}
+\begin{enumerate}
+  \item Dashboard → clic sur l'horloge → \textbf{Schedule} → Every Monday at 8:00 AM
+  \item Format : Email avec capture d'écran + lien
+  \item Destinataires : email du dirigeant + managers concernés
+\end{enumerate}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Source}} & \textcolor{white}{\textbf{Données exposées dans Metabase}} \\
+\midrule
+Odoo PostgreSQL & CRM, ventes, facturation, contacts \\
+\rowcolor{rowgray}
+n8n exports & KPIs d'automatisation (emails traités, workflows exécutés) \\
+InfluxDB & Métriques techniques si besoin d'une vue unifiée \\
+\rowcolor{rowgray}
+Fichiers CSV & Import de données externes (tableaux Excel du client) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item Le dirigeant reçoit les rapports par email — \textbf{pas besoin de se connecter}
+  \item L'accès Metabase peut être partagé en mode Viewer (lecture seule, sans config)
+  \item L'interface de configuration n'est accessible qu'à Jlax Expertise
+  \item Le rapport hebdomadaire arrive comme un email habituel — pas un nouvel outil à apprendre
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que le rapport du lundi s'est bien envoyé (consulter l'historique email)
+    \item[$\square$] Contrôler la connexion à la DB Odoo (Questions → Connexion OK)
+    \item[$\square$] Vérifier les KPIs : pas de valeurs aberrantes ou manquantes
+    \item[$\square$] Mettre à jour l'image : \texttt{docker compose pull \&\& docker compose up -d}
+    \item[$\square$] Ajouter/ajuster les questions selon l'évolution des besoins du client
+  \end{itemize}
+\end{checklist}
+
+\end{document}

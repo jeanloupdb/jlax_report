@@ -1,0 +1,158 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Restic + Backblaze B2}
+\newcommand{\ficheCategorie}{Sauvegardes — Chiffrées, Versionnées, Hors Site}
+\newcommand{\fichePack}{Core Pack}
+\newcommand{\fichePackColor}{colgreen}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Restic + Backblaze B2},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Restic est un outil de sauvegarde open-source ultra-fiable : chiffrement côté client (AES-256), déduplication, versionnage, et vérification d'intégrité automatique. Backblaze B2 est le stockage cloud cible (S3-compatible, 3× moins cher qu'AWS S3). Ensemble, ils forment une solution de sauvegarde professionnelle pour 5–15\,€/mois, capable de restaurer l'intégralité d'un VPS en moins d'une heure.
+
+\begin{pointcle}
+  La valeur de Restic n'est pas dans la sauvegarde elle-même mais dans la \textbf{restauration testée}. Un backup non testé n'existe pas. Planifier un test de restauration trimestriel.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Si un ransomware chiffre mes fichiers demain matin, je sais que je peux tout récupérer en moins d'une heure. Vous m'avez montré la restauration en live lors de notre réunion de bilan — c'était impressionnant. Et ça coûte moins cher que ma clé USB de sauvegarde d'avant. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item \textbf{Tranquillité absolue} : récupération en moins d'une heure après sinistre
+  \item Conformité RGPD (Article 32 : protection des données personnelles)
+  \item 3 dernières versions conservées : retour à J-1, J-7, J-30
+  \item Coût : \textbf{5–15\,€/mois} pour 100–500 GB de données
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Étape 1 — Créer un bucket Backblaze B2 :}
+\begin{lstlisting}[style=terminal]
+# Sur backblaze.com → Create Account (gratuit jusqu'à 10 GB)
+# Buckets → Create Bucket
+#   Name: jlax-client-nom-backup
+#   Type: Private
+#   Encryption: Server-side (en plus du chiffrement Restic côté client)
+
+# App Keys → Add a New Application Key
+#   Name: restic-client-nom
+#   Bucket: jlax-client-nom-backup
+#   Type: Read and Write
+# Copier: keyID et applicationKey
+\end{lstlisting}
+
+\textbf{Étape 2 — Installer Restic et initialiser le repo :}
+\begin{lstlisting}[style=terminal, caption={Installation et initialisation}]
+# Sur le VPS (Ubuntu/Debian)
+apt install restic -y
+
+# Variables d'environnement (dans /etc/restic/env ou .env)
+export B2_ACCOUNT_ID="votre_keyID"
+export B2_ACCOUNT_KEY="votre_applicationKey"
+export RESTIC_REPOSITORY="b2:jlax-client-nom-backup:/"
+export RESTIC_PASSWORD="MotDePasseChiffrementFort32chars"
+
+# Initialiser le repository (une seule fois)
+restic init
+
+# Premier backup
+restic backup /home /var/lib/docker/volumes /opt
+\end{lstlisting}
+
+\textbf{Étape 3 — Automatiser avec cron :}
+\begin{lstlisting}[style=terminal, caption={/etc/cron.d/restic-backup}]
+# Backup quotidien à 2h du matin
+0 2 * * * root /usr/local/bin/restic-backup.sh >> /var/log/restic.log 2>&1
+\end{lstlisting}
+
+\begin{lstlisting}[style=terminal, caption={/usr/local/bin/restic-backup.sh}]
+#!/bin/bash
+source /etc/restic/env
+
+restic backup \
+  /home \
+  /var/lib/docker/volumes \
+  /opt/stacks \
+  --tag "daily" \
+  --exclude="*.tmp" \
+  --exclude="*/cache/*"
+
+# Politique de rétention : 7 daily, 4 weekly, 3 monthly
+restic forget \
+  --keep-daily 7 \
+  --keep-weekly 4 \
+  --keep-monthly 3 \
+  --prune
+
+# Vérification intégrité (hebdomadaire - samedi)
+if [ "$(date +%u)" = "6" ]; then
+  restic check
+fi
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Volumes Docker à sauvegarder en priorité :}
+\begin{itemize}
+  \item \texttt{/var/lib/docker/volumes/} : tous les volumes (n8n, Grafana, Vaultwarden, etc.)
+  \item \texttt{/opt/stacks/} : fichiers \texttt{docker-compose.yml} et \texttt{.env} de chaque service
+  \item \texttt{/etc/traefik/} : configuration Traefik + certificats SSL
+  \item \texttt{/home/} : données utilisateurs
+\end{itemize}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Ce qui est sauvegardé}} & \textcolor{white}{\textbf{Contenu critique}} \\
+\midrule
+n8n volumes & Workflows, credentials, executions \\
+\rowcolor{rowgray}
+Vaultwarden data & Coffre-fort mots de passe — critique \\
+Wazuh config & Règles de détection personnalisées \\
+\rowcolor{rowgray}
+Grafana dashboards & Dashboards configurés \\
+PostgreSQL dumps & Données Odoo, n8n \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Notification de succès/échec via n8n :}
+\begin{itemize}
+  \item Script restic écrit le statut dans InfluxDB après chaque backup
+  \item n8n surveille et envoie une alerte Teams si backup en échec depuis 48h
+\end{itemize}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item Les sauvegardes s'exécutent la nuit (2h00) — \textbf{zéro impact sur les performances diurnes}
+  \item Le client n'interagit jamais avec Restic ou B2 : c'est 100\% automatisé
+  \item En cas de sinistre : Jlax effectue la restauration — le client attend la résolution
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier les logs du backup de la nuit (\texttt{/var/log/restic.log})
+    \item[$\square$] Contrôler la taille du bucket B2 et le coût mensuel
+    \item[$\square$] Lancer \texttt{restic check} si non fait cette semaine (vérification intégrité)
+    \item[$\square$] Tester une restauration partielle (un fichier ou un volume)
+    \item[$\square$] Vérifier la politique de rétention : snapshots anciens bien supprimés
+  \end{itemize}
+\end{checklist}
+
+\end{document}

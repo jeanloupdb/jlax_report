@@ -1,0 +1,34 @@
+# ── LaTeX fichiers temporaires ────────────────────────────────
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.nav
+*.snm
+*.vrb
+
+# Garder les PDFs compilés (assets du site)
+!output/main.pdf
+!output/fiches/*.pdf
+
+# Garder le placeholder du dossier output
+!output/.gitkeep
+
+# ── OS / éditeur ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+*~
+
+# ── Secrets ──────────────────────────────────────────────────
+.env
+*.env.local
+secrets/
+
+# ── Puppeteer cache (Mermaid) ─────────────────────────────────
+.puppeteer.json
+node_modules/

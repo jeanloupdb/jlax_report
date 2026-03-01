@@ -1,0 +1,157 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Paperless-ngx}
+\newcommand{\ficheCategorie}{GED Intelligente — Archivage \& OCR Automatique}
+\newcommand{\fichePack}{Option Premium}
+\newcommand{\fichePackColor}{navylight}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Paperless-ngx},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Paperless-ngx est un système de gestion électronique de documents (GED) open-source avec OCR intégré. Il importe automatiquement les documents (PDF, scans, emails), les classe, les indexe en texte intégral, et les rend recherchables en 3 secondes. Fin des dossiers SharePoint désorganisés, des scans illisibles, et des documents introuvables. L'archivage RGPD devient automatique.
+
+\begin{pointcle}
+  Paperless-ngx est particulièrement adapté aux cabinets (comptables, juridiques, RH) et PME avec beaucoup de documents papier numérisés. L'effet immédiat est spectaculaire pour les équipes administratives.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Je tape 3 mots dans la barre de recherche et je retrouve n'importe quel document en 3 secondes — même un contrat scanné de 2018 en mauvaise qualité. Avant je passais 20 minutes à chercher dans des dossiers imbriqués. Toute notre paperasse est maintenant numérique et retrouvable instantanément. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item Fin de la recherche de documents : \textbf{-20 min/document} trouvé en 3 secondes
+  \item Conformité archivage RGPD (durée de conservation, droits d'accès)
+  \item OCR automatique : tous les scans deviennent recherchables en texte
+  \item Import automatique depuis Outlook (pièces jointes PDF classées automatiquement)
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} Docker sur VPS-1 Core, Traefik, espace disque suffisant (prévoir 50+ GB pour les documents).
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — Paperless-ngx complet}]
+version: "3.8"
+services:
+  broker:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${PAPERLESS_DB_PASSWORD}
+    volumes:
+      - paperless_db:/var/lib/postgresql/data
+
+  webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: always
+    depends_on:
+      - db
+      - broker
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: ${PAPERLESS_DB_PASSWORD}
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
+      PAPERLESS_URL: https://docs.votredomaine.com
+      PAPERLESS_OCR_LANGUAGE: fra+eng
+      PAPERLESS_TIME_ZONE: Europe/Paris
+      PAPERLESS_ADMIN_USER: admin
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
+      PAPERLESS_EMAIL_HOST: smtp.votredomaine.com
+      PAPERLESS_EMAIL_PORT: 587
+      PAPERLESS_EMAIL_HOST_USER: ${SMTP_USER}
+      PAPERLESS_EMAIL_HOST_PASSWORD: ${SMTP_PASSWORD}
+    volumes:
+      - paperless_data:/usr/src/paperless/data
+      - paperless_media:/usr/src/paperless/media
+      - paperless_export:/usr/src/paperless/export
+      - paperless_consume:/usr/src/paperless/consume
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paperless.rule=Host(`docs.votredomaine.com`)"
+      - "traefik.http.routers.paperless.tls.certresolver=letsencrypt"
+
+volumes:
+  redis_data:
+  paperless_db:
+  paperless_data:
+  paperless_media:
+  paperless_export:
+  paperless_consume:
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Import automatique depuis Outlook (via n8n) :}
+\begin{enumerate}
+  \item n8n surveille la boîte email de numérisation (\texttt{scan@votredomaine.com})
+  \item Quand un email avec pièce jointe PDF arrive, n8n télécharge la pièce jointe
+  \item n8n dépose le fichier dans le dossier \texttt{consume} via l'API Paperless
+  \item Paperless OCR le document, l'indexe, et le classe automatiquement
+\end{enumerate}
+
+\textbf{Correspondants et tags automatiques :}
+\begin{itemize}
+  \item Créer des règles de correspondance : si le PDF contient "Facture" → tag \textit{Facture}
+  \item Correspondant automatique : reconnaître le fournisseur dans le document
+  \item Type de document : Contrat, Facture, RH, Assurance, etc.
+\end{itemize}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle}} \\
+\midrule
+n8n & Import automatique depuis Outlook, classification IA des documents \\
+\rowcolor{rowgray}
+MS Graph API & Lecture des emails de numérisation, import depuis SharePoint \\
+OpenAI API & Classification automatique du type de document (IA) \\
+\rowcolor{rowgray}
+Restic + B2 & Sauvegarde du volume media (documents originaux) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item Le collaborateur \textbf{scanne et envoie par email} : le reste est automatique
+  \item L'interface Paperless est accessible aux collaborateurs concernés (pas de formation longue)
+  \item Import en masse depuis SharePoint existant : migration silencieuse des anciens documents
+  \item Compatible mobile : application Paperless Mobile sur iOS/Android
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier les documents en attente de classification manuelle (inbox Paperless)
+    \item[$\square$] Contrôler que l'import automatique email fonctionne (envoyer un document test)
+    \item[$\square$] Vérifier l'espace disque du volume media
+    \item[$\square$] Lancer une sauvegarde Restic manuelle si volume important de nouveaux docs
+    \item[$\square$] Mettre à jour l'image : \texttt{docker compose pull \&\& docker compose up -d}
+  \end{itemize}
+\end{checklist}
+
+\end{document}

@@ -1,0 +1,174 @@
+% =============================================================
+%  JLAX EXPERTISE — Rapport Stratégique
+%  Compilez avec : latexmk -pdf main.tex
+%  Compilation live : make watch
+% =============================================================
+\documentclass[12pt, a4paper]{article}
+
+% ── Encodage & langue ─────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+
+% ── Mise en page ─────────────────────────────────────────────
+\usepackage[top=2.5cm, bottom=3cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{microtype}
+\usepackage{lmodern}
+\usepackage{parskip}
+\setlength{\parskip}{6pt}
+
+% ── Couleurs ─────────────────────────────────────────────────
+\usepackage[dvipsnames, table]{xcolor}
+\definecolor{navydark}{RGB}{27, 42, 74}
+\definecolor{navylight}{RGB}{37, 99, 235}
+\definecolor{rowgray}{RGB}{245, 247, 250}
+\definecolor{tabheader}{RGB}{27, 42, 74}
+\definecolor{colgreen}{RGB}{22, 163, 74}
+\definecolor{colorange}{RGB}{217, 119, 6}
+\definecolor{colred}{RGB}{220, 38, 38}
+\definecolor{colgold}{RGB}{161, 98, 7}
+\definecolor{accentline}{RGB}{37, 99, 235}
+
+% ── Graphiques ───────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{shapes, arrows.meta, positioning}
+
+% ── Tableaux ─────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{multicol}
+\usepackage{makecell}
+
+% ── Boîtes colorées ──────────────────────────────────────────
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable}
+
+% ── Liens ────────────────────────────────────────────────────
+\usepackage[colorlinks=true,
+            linkcolor=navydark,
+            urlcolor=navylight,
+            citecolor=navydark,
+            pdftitle={Jlax Expertise — Stratégie IA \& Automatisation},
+            pdfauthor={Jlax Expertise}]{hyperref}
+
+% ── Listes ───────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{noitemsep, topsep=4pt}
+\setlist[enumerate]{noitemsep, topsep=4pt}
+
+% ── Titres de sections ───────────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\section}
+  {\color{navydark}\Large\bfseries}
+  {\thesection}{1em}{}[\color{accentline}\titlerule]
+\titleformat{\subsection}
+  {\color{navydark}\large\bfseries}
+  {\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\color{navydark}\normalsize\bfseries}
+  {\thesubsubsection}{1em}{}
+
+% ── En-têtes & pieds de page ─────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{navydark}\textbf{Jlax Expertise}}
+\fancyhead[R]{\small\color{navydark}Rapport Stratégique — IA \& Automatisation PME}
+\fancyfoot[C]{\small\color{gray}Page \thepage\ / \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ── Commandes personnalisées ─────────────────────────────────
+
+% Pastille couleur pour impact habitudes
+\newcommand{\invisible}{\textcolor{colgreen}{\textbullet}~Invisible}
+\newcommand{\leger}{\textcolor{colorange}{\textbullet}~Léger}
+\newcommand{\fort}{\textcolor{colred}{\textbullet}~Fort}
+
+% Inclure un diagramme Mermaid (généré dans figures/images/)
+% Usage : \mermaidfig{0.9}{nom_fichier_sans_extension}{Légende}
+\newcommand{\mermaidfig}[3]{%
+  \begin{figure}[htbp]
+    \centering
+    \includegraphics[width=#1\textwidth]{figures/images/#2}
+    \caption{#3}
+    \label{fig:#2}
+  \end{figure}%
+}
+
+% Boîte "Point clé"
+\newtcolorbox{pointcle}[1][]{
+  enhanced, breakable,
+  colback=navydark!5, colframe=navydark,
+  fonttitle=\bfseries\small, title=Point clé,
+  left=6pt, right=6pt, top=4pt, bottom=4pt,
+  #1
+}
+
+% Boîte "Attention"
+\newtcolorbox{attention}[1][]{
+  enhanced, breakable,
+  colback=colred!8, colframe=colred,
+  fonttitle=\bfseries\small, title=Attention,
+  left=6pt, right=6pt, top=4pt, bottom=4pt,
+  #1
+}
+
+% ── Césure pour longs mots français dans colonnes étroites ──
+\hyphenation{Au-to-ma-ti-sa-tion au-to-ma-ti-sa-tion
+             Au-to-ma-ti-sa-tions au-to-ma-ti-sa-tions
+             In-té-gra-tion in-té-gra-tion
+             Cyber-sé-cu-ri-té cyber-sé-cu-ri-té
+             In-fra-struc-ture in-fra-struc-ture
+             Mo-ni-to-ring mo-ni-to-ring
+             Or-ches-tra-tion or-ches-tra-tion}
+
+% ── Métadonnées ──────────────────────────────────────────────
+\title{%
+  {\color{navydark}\Huge\bfseries Jlax Expertise}\\[0.8em]
+  {\color{navylight}\Large Stratégie Modernisation IA des PME}\\[0.4em]
+  {\normalsize\color{gray} Tableau de bord décisionnel — Outils, Architecture \& Offre commerciale}
+}
+\author{\textbf{Pôle IA \& Automatisation}}
+\date{Mars 2026 — Confidentiel}
+
+% =============================================================
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+\begin{center}
+  \begin{minipage}{0.8\textwidth}
+    \centering
+    \color{gray}\itshape
+    « Nous modernisons votre entreprise sans que vous changiez vos habitudes. »
+  \end{minipage}
+\end{center}
+
+\vspace{2em}
+\tableofcontents
+\newpage
+
+% ── Sections ─────────────────────────────────────────────────
+\input{sections/01_introduction}
+\newpage
+
+\input{sections/02_outils}
+\newpage
+
+\input{sections/03_architecture}
+\newpage
+
+\input{sections/04_offre}
+\newpage
+
+\input{sections/05_valeur}
+
+\end{document}

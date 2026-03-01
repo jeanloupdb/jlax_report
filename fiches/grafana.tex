@@ -1,0 +1,154 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Grafana + InfluxDB}
+\newcommand{\ficheCategorie}{Dashboard — Visualisation \& Reporting Temps Réel}
+\newcommand{\fichePack}{Core Pack}
+\newcommand{\fichePackColor}{colgreen}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Grafana + InfluxDB},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Grafana est la plateforme de visualisation des données de toute la stack. Couplé à InfluxDB (base de données temporelles), il affiche en temps réel les métriques d'infrastructure, de sécurité, et d'activité business. C'est l'écran que le dirigeant ouvre chaque matin pour avoir une vision 360° de son entreprise en 30 secondes.
+
+\begin{pointcle}
+  Grafana a un \textbf{effet Wow immédiat} lors des démos commerciales : montrer un dashboard en temps réel pendant la réunion de vente est l'argument le plus convaincant de toute la stack.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« J'ai un écran que j'ouvre le matin avec mon chiffre d'affaires du mois, le nombre de nouveaux contacts Odoo, les incidents sécurité de la nuit, et la disponibilité de tous mes services. Tout en un coup d'œil. Je prends mes décisions en 30 secondes au lieu d'attendre le reporting de fin de mois. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item Vision 360° en \textbf{30 secondes} au lieu d'attendre le rapport mensuel
+  \item Décisions éclairées sans réunions interminables de reporting
+  \item Détection immédiate des anomalies (pic d'alertes sécurité, baisse CA)
+  \item \textbf{45 min/semaine} économisées sur la préparation de réunions de suivi
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} Docker sur VPS-1 Core, Traefik pour HTTPS.
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — Grafana + InfluxDB}]
+version: "3.8"
+services:
+  influxdb:
+    image: influxdb:2.7-alpine
+    restart: always
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD}
+      DOCKER_INFLUXDB_INIT_ORG: jlax
+      DOCKER_INFLUXDB_INIT_BUCKET: metrics
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN}
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    ports:
+      - "8086:8086"
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    restart: always
+    depends_on:
+      - influxdb
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_SERVER_ROOT_URL: https://grafana.votredomaine.com
+      GF_SMTP_ENABLED: "true"
+      GF_SMTP_HOST: smtp.votredomaine.com:587
+      GF_SMTP_USER: ${SMTP_USER}
+      GF_SMTP_PASSWORD: ${SMTP_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.votredomaine.com`)"
+      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+
+volumes:
+  influxdb_data:
+  grafana_data:
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Datasources à configurer :}
+\begin{enumerate}
+  \item Grafana → Configuration → Data Sources → Add → \textbf{InfluxDB}
+    \begin{itemize}
+      \item URL : \texttt{http://influxdb:8086}
+      \item Organisation : \texttt{jlax}, Bucket : \texttt{metrics}, Token : \texttt{\$INFLUXDB\_TOKEN}
+    \end{itemize}
+  \item Ajouter datasource \textbf{Wazuh} via l'API OpenSearch
+  \item Ajouter datasource \textbf{PostgreSQL} (Odoo) pour les KPIs business
+\end{enumerate}
+
+\textbf{Push de métriques depuis n8n → InfluxDB :}
+\begin{lstlisting}[style=terminal, caption={Workflow n8n : push métrique InfluxDB}]
+# Node HTTP Request dans n8n :
+# POST http://influxdb:8086/api/v2/write?org=jlax&bucket=metrics
+# Authorization: Token ${INFLUXDB_TOKEN}
+# Content-Type: text/plain
+
+# Body (format InfluxDB line protocol) :
+# kpis,client=acme ca_mensuel=15200,nouveaux_contacts=8 $(date +%s%N)
+\end{lstlisting}
+
+\textbf{Dashboards recommandés (importables depuis grafana.com) :}
+\begin{itemize}
+  \item \textbf{ID 1860} : Node Exporter Full (métriques VPS)
+  \item \textbf{ID 13659} : Wazuh Security Dashboard
+  \item Créer un dashboard custom "KPIs Client" : CA, contacts, alertes sécurité
+\end{itemize}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Source de données}} & \textcolor{white}{\textbf{Métriques exposées}} \\
+\midrule
+n8n & Workflows exécutés/jour, taux d'erreur, temps d'exécution \\
+\rowcolor{rowgray}
+Wazuh & Alertes sécurité/jour, niveau de criticité, endpoints actifs \\
+InfluxDB & KPIs business poussés par n8n (CA, contacts, tickets) \\
+\rowcolor{rowgray}
+Uptime Kuma & Disponibilité des services (via webhook → InfluxDB) \\
+Odoo (PostgreSQL) & Opportunités, devis, CA en lecture directe sur la DB \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item Grafana est accessible uniquement via une URL sécurisée partagée avec le dirigeant
+  \item Créer un compte \textbf{Viewer} pour le dirigeant — pas de modification possible
+  \item Le dashboard est en lecture seule : le client voit, Jlax configure
+  \item Option : email automatique hebdomadaire du dashboard en PDF (Grafana → Reporting)
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que toutes les datasources sont connectées (vert dans Configuration)
+    \item[$\square$] Contrôler l'espace disque InfluxDB (\texttt{docker system df})
+    \item[$\square$] Vérifier que les métriques sont bien mises à jour (données récentes)
+    \item[$\square$] Envoyer le rapport PDF hebdomadaire si configuré
+    \item[$\square$] Mettre à jour les deux images : \texttt{docker compose pull \&\& up -d}
+  \end{itemize}
+\end{checklist}
+
+\end{document}

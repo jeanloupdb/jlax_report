@@ -1,0 +1,143 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Vaultwarden}
+\newcommand{\ficheCategorie}{Gestion des Mots de Passe — Compatible Bitwarden}
+\newcommand{\fichePack}{Core Pack}
+\newcommand{\fichePackColor}{colgreen}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Vaultwarden},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Vaultwarden est une implémentation open-source et légère du protocole Bitwarden. Il permet à l'équipe client de gérer tous leurs mots de passe de façon centralisée, chiffrée, et partagée — sans jamais s'envoyer de mots de passe par email ou par Teams. L'extension navigateur Bitwarden (gratuite) se connecte à l'instance auto-hébergée Vaultwarden. Installation en moins de 3 heures, adoption client en moins d'une journée.
+
+\begin{pointcle}
+  Vaultwarden est l'outil avec le \textbf{meilleur ROI sécurité} par rapport au temps d'installation. C'est aussi l'outil le plus \textbf{facilement adoptable} par les équipes non-techniques.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Mon équipe accède à tous les mots de passe partagés depuis le navigateur, sans se les envoyer par email ou par WhatsApp. Quand un employé part, je révoque son accès en 10 secondes. Plus jamais de "j'ai pas le mot de passe du site client". »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item \textbf{Zéro} mot de passe en clair par email ou messagerie
+  \item Accès révocable instantanément (départ d'un employé)
+  \item Mots de passe forts générés automatiquement (fini le \texttt{azerty123})
+  \item Audit de sécurité intégré : détection des mots de passe réutilisés ou faibles
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} Docker sur VPS-1 Core, Traefik pour HTTPS (obligatoire : Bitwarden refuse le HTTP).
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — Vaultwarden}]
+version: "3.8"
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    restart: always
+    environment:
+      DOMAIN: https://vault.votredomaine.com
+      SIGNUPS_ALLOWED: "false"    # Invitations uniquement
+      ADMIN_TOKEN: ${VAULTWARDEN_ADMIN_TOKEN}
+      SMTP_HOST: smtp.votredomaine.com
+      SMTP_FROM: vault@votredomaine.com
+      SMTP_PORT: 587
+      SMTP_SECURITY: starttls
+      SMTP_USERNAME: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+    volumes:
+      - vaultwarden_data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vault.rule=Host(`vault.votredomaine.com`)"
+      - "traefik.http.routers.vault.tls.certresolver=letsencrypt"
+
+volumes:
+  vaultwarden_data:
+\end{lstlisting}
+
+\begin{lstlisting}[style=terminal, caption={Génération du token admin et démarrage}]
+# Générer un token admin sécurisé
+openssl rand -base64 48
+
+# Démarrer
+docker compose up -d
+
+# Accéder à l'interface admin
+# https://vault.votredomaine.com/admin
+# Token admin → inviter les utilisateurs
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Onboarding client (à réaliser en 30 minutes en visio) :}
+\begin{enumerate}
+  \item Inviter le dirigeant par email depuis l'admin Vaultwarden
+  \item Le dirigeant crée son compte avec un \textbf{mot de passe maître fort} ($\geq$16 caractères)
+  \item Installer l'extension Bitwarden sur Chrome/Edge/Firefox (gratuite, app store)
+  \item Se connecter à l'extension : URL \texttt{https://vault.votredomaine.com}
+  \item Créer l'organisation client → inviter les autres membres de l'équipe
+  \item Créer les collections (ex: Compta, Site web, Outils IT)
+  \item Importer les mots de passe existants (export Chrome CSV → import Bitwarden)
+\end{enumerate}
+
+\textbf{Collections recommandées :}
+\begin{itemize}
+  \item \textbf{Direction} : accès restreint au dirigeant
+  \item \textbf{Équipe commerciale} : CRM, sites clients
+  \item \textbf{IT / Technique} : serveurs, VPS, accès admin (Jlax uniquement)
+\end{itemize}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle}} \\
+\midrule
+Traefik & Reverse proxy SSL obligatoire (Bitwarden exige HTTPS) \\
+\rowcolor{rowgray}
+Wazuh & Surveillance des tentatives de connexion à l'interface Vaultwarden \\
+n8n & Alerte si aucune connexion au vault depuis 30 jours (inactivité) \\
+\rowcolor{rowgray}
+Restic + B2 & Sauvegarde quotidienne du volume \texttt{vaultwarden\_data} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item L'instance Vaultwarden est hébergée chez Jlax — \textbf{données du client, infrastructure Jlax}
+  \item Le client utilise l'extension Bitwarden (marque connue) — \textbf{pas de nouveau nom à apprendre}
+  \item L'interface admin Vaultwarden est invisible pour les utilisateurs finaux
+  \item En cas de changement de prestataire : export Bitwarden standard (portabilité totale)
+\end{itemize}
+
+\begin{attention}
+  \textbf{Sauvegarder le volume Vaultwarden quotidiennement} — c'est le coffre-fort de tous les accès du client. Une perte de données ici est catastrophique. Tester la restauration au moins une fois par trimestre.
+\end{attention}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que les sauvegardes Restic du volume vault sont fonctionnelles
+    \item[$\square$] Contrôler les comptes actifs : aucun ancien employé ne doit avoir accès
+    \item[$\square$] Lancer un audit de sécurité Bitwarden (mots de passe faibles/réutilisés)
+    \item[$\square$] Vérifier les logs d'accès dans l'admin Vaultwarden
+    \item[$\square$] Mettre à jour l'image : \texttt{docker compose pull \&\& docker compose up -d}
+  \end{itemize}
+\end{checklist}
+
+\end{document}

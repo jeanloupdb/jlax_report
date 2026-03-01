@@ -1,0 +1,67 @@
+% =============================================================
+%  Section 3 — Architecture technique recommandée
+% =============================================================
+\section{Architecture technique recommandée}
+
+\subsection{Principes directeurs}
+
+\begin{itemize}
+  \item \textbf{Hébergement maîtrisé} : tout est sur VPS Hetzner sous notre contrôle — pas de SaaS tiers coûteux
+  \item \textbf{Containerisation Docker} : déploiement rapide, rollback facile, maintenance Portainer
+  \item \textbf{Multi-tenant} : une instance n8n peut servir 5–10 clients PME simultanément
+  \item \textbf{RGPD} : données sensibles routées via Azure OpenAI (datacenter EU) plutôt qu'OpenAI direct
+\end{itemize}
+
+\subsection{Schéma d'architecture}
+
+\mermaidfig{1.0}{architecture}{Architecture infrastructure — Jlax Expertise}
+
+\subsection{Détail des deux VPS}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Répartition des services par VPS}
+  \renewcommand{\arraystretch}{1.5}
+  \begin{tabularx}{\textwidth}{>{\bfseries}p{3.2cm} X p{2.2cm} p{2.2cm}}
+    \toprule
+    \rowcolor{tabheader}
+    \color{white}VPS & \color{white}Services hébergés & \color{white}Config & \color{white}Coût/mois \\
+    \midrule
+    VPS-1 Core & n8n, Grafana, Metabase, Flowise, Uptime Kuma, GoPhish, Vaultwarden, Traefik, Portainer & Hetzner CX21 \newline 2 vCPU / 4 GB & \textbf{\~{}25 €} \\
+    \rowcolor{rowgray}
+    VPS-2 Sécurité & Wazuh (SIEM + EDR), CrowdSec & Hetzner CX31 \newline 2 vCPU / 8 GB & \textbf{\~{}45 €} \\
+    \midrule
+    \multicolumn{3}{r}{\textbf{Total infrastructure}} & \textbf{\~{}70 €} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Flux de données principal}
+
+\begin{enumerate}
+  \item \textbf{Collecte} : Microsoft Graph API intercepte emails/événements Teams/SharePoint
+  \item \textbf{Orchestration} : n8n reçoit les webhooks et déclenche les workflows
+  \item \textbf{Traitement IA} : GPT-4o-mini via OpenAI API (ou Azure OpenAI pour RGPD)
+  \item \textbf{Action} : écriture dans Odoo, envoi email dirigeant, mise à jour Grafana
+  \item \textbf{Monitoring} : Wazuh surveille tous les endpoints clients et remonte les alertes via n8n
+  \item \textbf{Reporting} : n8n génère PDF mensuel et l'envoie automatiquement
+\end{enumerate}
+
+\subsection{Sauvegardes}
+
+\begin{itemize}
+  \item \textbf{Outil} : Restic (chiffrement AES-256) → Backblaze B2 (\~{}0,006 \$/Go)
+  \item \textbf{Fréquence} : quotidienne pour les données client, hebdo pour les configs
+  \item \textbf{Rétention} : 30 jours quotidiens + 12 semaines hebdomadaires
+  \item \textbf{Coût} : \~{}3–10 €/mois selon volume
+\end{itemize}
+
+\subsection{Sécurité de l'infrastructure prestataire}
+
+\begin{itemize}
+  \item Accès SSH par clé uniquement, port non-standard
+  \item Traefik gère SSL/TLS automatique (Let's Encrypt) pour tous les services
+  \item Vaultwarden centralize tous les credentials (accès par clé maîtresse)
+  \item CrowdSec bloque les IPs malveillantes en temps réel
+  \item Fail2ban sur les VPS comme couche de protection supplémentaire
+\end{itemize}

@@ -1,0 +1,153 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Odoo Community}
+\newcommand{\ficheCategorie}{CRM / ERP — Gestion Commerciale \& Opérationnelle}
+\newcommand{\fichePack}{Option Premium}
+\newcommand{\fichePackColor}{navylight}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Odoo Community},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Odoo Community est la version open-source de l'ERP Odoo. Elle couvre le CRM, la gestion des ventes, la facturation, le suivi des projets, et bien plus. Pour les PME qui n'ont pas de CRM ou qui utilisent Excel, Odoo représente un saut qualitatif majeur. Couplé à n8n, il devient entièrement automatisé : les contacts se créent depuis les emails, les devis se génèrent en 2 clics, et les données restent toujours à jour.
+
+\begin{pointcle}
+  Odoo Community est puissant mais complexe à déployer (\textbf{Cx = 4}). Réserver à des clients avec un vrai besoin CRM/ERP et prévoir 12–20h d'installation + configuration initiale.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Mon CRM se met à jour tout seul quand je reçois un email client. Les devis se génèrent en 2 clics depuis une opportunité. Et chaque lundi matin, Metabase m'envoie un résumé de mon pipeline commercial. Je n'ai plus besoin de demander à mes commerciaux "où en est-on avec ce client ?" »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item Données clients \textbf{toujours à jour} sans saisie manuelle
+  \item Pipeline commercial fiable et en temps réel
+  \item Génération de devis \textbf{3× plus rapide} (depuis une opportunité en 2 clics)
+  \item Intégration Outlook → Odoo : chaque email client crée automatiquement une activité
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} VPS avec minimum 4 GB RAM (Odoo est gourmand), Docker + Docker Compose, Traefik.
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — Odoo Community + PostgreSQL}]
+version: "3.8"
+services:
+  odoo-db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: ${ODOO_DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - odoo_db:/var/lib/postgresql/data
+
+  odoo:
+    image: odoo:17-community
+    restart: always
+    depends_on:
+      - odoo-db
+    environment:
+      HOST: odoo-db
+      USER: odoo
+      PASSWORD: ${ODOO_DB_PASSWORD}
+    volumes:
+      - odoo_data:/var/lib/odoo
+      - ./config/odoo.conf:/etc/odoo/odoo.conf
+      - ./addons:/mnt/extra-addons
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.odoo.rule=Host(`erp.votredomaine.com`)"
+      - "traefik.http.routers.odoo.tls.certresolver=letsencrypt"
+
+volumes:
+  odoo_db:
+  odoo_data:
+\end{lstlisting}
+
+\begin{lstlisting}[style=yamlstyle, caption={config/odoo.conf}]
+[options]
+addons_path = /mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons
+db_host = odoo-db
+db_port = 5432
+db_user = odoo
+db_password = ${ODOO_DB_PASSWORD}
+admin_passwd = ${ODOO_ADMIN_PASSWORD}
+workers = 2
+max_cron_threads = 1
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Modules à installer en priorité :}
+\begin{itemize}
+  \item \textbf{CRM} : gestion des leads et opportunités — module fondamental
+  \item \textbf{Sales} : devis, bons de commande, facturation
+  \item \textbf{Email Marketing} : campagnes email (si besoin)
+  \item \textbf{Project} : gestion de projets et tâches internes
+\end{itemize}
+
+\textbf{Configuration API REST pour n8n :}
+\begin{lstlisting}[style=terminal]
+# Dans Odoo : Settings → Technical → API Keys
+# Créer une clé API avec les droits minimaux nécessaires
+# Exemple d'appel n8n → Odoo :
+POST https://erp.votredomaine.com/api/res.partner
+Authorization: Bearer VOTRE_CLE_API
+{
+  "name": "Nouveau Client",
+  "email": "client@example.com",
+  "is_customer": true
+}
+\end{lstlisting}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle}} \\
+\midrule
+n8n & Création/MAJ contacts depuis emails Outlook, sync bidirectionnelle \\
+\rowcolor{rowgray}
+MS Graph API & Import des emails → Odoo activities, synchro calendrier \\
+Metabase & Dashboards KPIs depuis la DB PostgreSQL Odoo (lecture seule) \\
+\rowcolor{rowgray}
+OpenAI API & Enrichissement automatique des fiches contacts, résumé de l'historique \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item Odoo est l'outil que \textbf{le client voit et utilise} — contrairement aux autres briques
+  \item L'effort d'adoption est réel : prévoir 2–3h de formation par utilisateur
+  \item Les automatisations (import email, sync) fonctionnent en arrière-plan — invisibles
+  \item Migration depuis Excel : Odoo propose des imports CSV natifs
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que la synchronisation n8n → Odoo est active (nouveaux contacts OK)
+    \item[$\square$] Contrôler les cron jobs Odoo (Settings → Technical → Scheduled Actions)
+    \item[$\square$] Vérifier l'espace disque du volume Odoo et de la DB PostgreSQL
+    \item[$\square$] Mettre à jour l'image Odoo (attention : vérifier compatibilité modules avant)
+    \item[$\square$] Sauvegarder la DB Odoo via Restic (dump PostgreSQL quotidien)
+  \end{itemize}
+\end{checklist}
+
+\end{document}

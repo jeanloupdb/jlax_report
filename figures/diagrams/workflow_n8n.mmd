@@ -1,0 +1,20 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1B2A4A', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#2563EB', 'lineColor': '#2563EB', 'secondaryColor': '#F1F5F9'}}}%%
+
+sequenceDiagram
+    participant OUT as 📨 Outlook (client)
+    participant GR as Microsoft Graph API
+    participant N8N as ⚙️ n8n (webhook)
+    participant GPT as 🧠 GPT-4o-mini
+    participant ODOO as 📋 Odoo CRM
+    participant PDF as 📄 Rapport PDF
+    participant DIR as 👔 Dirigeant
+
+    OUT->>GR: Nouvel email reçu (demande devis)
+    GR->>N8N: Webhook — contenu email
+    N8N->>GPT: Extraire: client, produits, montants, urgence
+    GPT-->>N8N: JSON structuré {client, lignes, priorité}
+    N8N->>ODOO: Créer opportunité + pré-remplir devis
+    ODOO-->>N8N: ID devis créé
+    N8N->>PDF: Générer résumé d'activité hebdomadaire
+    PDF-->>DIR: Email automatique — "Votre semaine en un coup d'œil"
+    Note over OUT,DIR: Durée totale : ~8 secondes — zéro action humaine

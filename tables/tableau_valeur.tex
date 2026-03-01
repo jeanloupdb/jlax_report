@@ -1,0 +1,134 @@
+% =============================================================
+%  Tableau valeur perçue par le client
+%  3 colonnes : Outil | Ce que voit le client | Gain concret
+% =============================================================
+
+\begin{footnotesize}
+\renewcommand{\arraystretch}{1.7}
+\setlength{\tabcolsep}{5pt}
+
+\begin{longtable}{>{\bfseries}p{2.2cm} p{6.8cm} p{5.0cm}}
+
+\caption{Valeur perçue par le client — par outil} \label{tab:valeur} \\
+
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} &
+\textcolor{white}{\textbf{Ce que voit et ressent le client}} &
+\textcolor{white}{\textbf{Gain concret}} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{c}{\tablename\ \thetable{} — suite} \\[2pt]
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} &
+\textcolor{white}{\textbf{Ce que voit et ressent le client}} &
+\textcolor{white}{\textbf{Gain concret}} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+
+% ── CORE PACK ─────────────────────────────────────────────────
+\multicolumn{3}{l}{\cellcolor{colgreen!15}\textcolor{colgreen}{\textbf{$\triangleright$ Core Pack — Socle de modernisation invisible}}} \\[2pt]
+
+\rowcolor{colgreen!5}
+n8n &
+\textit{« Mes devis se pré-remplissent depuis mes emails, mes relances partent toutes seules, mes fiches clients se mettent à jour sans que je touche à quoi que ce soit. »} &
+\textbf{3–5 h/semaine} libérées sur la saisie manuelle et les tâches répétitives \\
+
+\rowcolor{rowgray}
+OpenAI API &
+\textit{« Un résumé de mes emails complexes apparaît automatiquement. Mes brouillons de réponse sont déjà rédigés quand j'ouvre ma boîte. »} &
+Rédaction × 10 plus rapide. Qualité homogène sur toutes les communications \\
+
+\rowcolor{colgreen!5}
+GoPhish &
+\textit{« Nous avons reçu un rapport détaillé montrant qui a cliqué sur un faux email frauduleux. On a pu former les personnes concernées. »} &
+Risque de ransomware réduit. Preuve de formation pour assurance cyber \\
+
+\rowcolor{rowgray}
+Wazuh &
+\textit{« J'ai reçu une alerte à 3h du matin qu'un serveur tentait de se connecter depuis l'étranger. On a bloqué avant tout incident. »} &
+Détection en \textbf{minutes} vs semaines. \textbf{10×} moins cher qu'un SOC traditionnel \\
+
+\rowcolor{colgreen!5}
+CrowdSec &
+\textit{Invisible pour le client — il ne voit rien, et c'est exactement le but : aucune attaque n'arrive jusqu'à lui.} &
+Protection automatique contre les IPs malveillantes connues mondialeme nt \\
+
+\rowcolor{rowgray}
+Uptime Kuma &
+\textit{« Je suis prévenu par SMS dès que mon site ou mon ERP est inaccessible — avant que mes clients me le signalent. »} &
+Réactivité maximale. \textbf{Image professionnelle} préservée auprès des clients \\
+
+\rowcolor{colgreen!5}
+Grafana &
+\textit{« J'ai un écran que j'ouvre le matin avec mon CA du mois, les incidents sécurité, la dispo des services. Tout en un coup d'œil. »} &
+Vision 360° en \textbf{30 secondes}. Décisions éclairées sans réunions interminables \\
+
+\rowcolor{rowgray}
+Vaultwarden &
+\textit{« Mon équipe accède à tous les mots de passe partagés depuis le navigateur, sans se les envoyer par email. »} &
+\textbf{Zéro} mot de passe en clair par email. Accès révocable instantanément \\
+
+\rowcolor{colgreen!5}
+Restic + B2 &
+\textit{« Si un ransomware chiffre mes fichiers demain matin, je sais que je peux tout récupérer en moins d'une heure. »} &
+\textbf{Tranquillité absolue}. Conformité RGPD. Potentiellement des semaines de travail sauvées \\
+
+\rowcolor{rowgray}
+Secure Score &
+\textit{« Je reçois chaque mois un rapport avec mon score de sécurité Microsoft et les 3 actions prioritaires à faire. Le score monte. »} &
+Argument pour assurance cyber. Conformité. Outil de preuve chez les grands comptes \\
+
+% ── OPTIONS PREMIUM ───────────────────────────────────────────
+\multicolumn{3}{l}{\cellcolor{navylight!12}\textcolor{navylight}{\textbf{$\triangleright$ Options Premium — Valeur perçue élevée}}} \\[2pt]
+
+\rowcolor{navylight!5}
+Flowise &
+\textit{« Je pose une question à mon assistant Teams sur un contrat de 2021 et il me cite la bonne clause en 4 secondes. »} &
+\textbf{-2 h/jour} de recherche documentaire. Réponses cohérentes et traçables \\
+
+\rowcolor{rowgray}
+Metabase &
+\textit{« Tous les lundis matin, je reçois un email avec mes KPIs de la semaine : nouveaux clients, CA, tickets ouverts. Je ne demande rien. »} &
+\textbf{45 min/semaine} récupérées sur préparation de réunion et reporting manuel \\
+
+\rowcolor{navylight!5}
+Paperless-ngx &
+\textit{« Je tape 3 mots et je retrouve n'importe quel document en 3 secondes — même un contrat scanné de 2018. »} &
+Fin de la recherche de documents. Conformité archivage. \textbf{RGPD} simplifié \\
+
+\rowcolor{rowgray}
+Odoo Community &
+\textit{« Mon CRM se met à jour tout seul quand je reçois un email client. Les devis se génèrent en 2 clics depuis une opportunité. »} &
+Données clients \textbf{toujours à jour}. Moins de saisie. Pipeline commercial fiable \\
+
+\rowcolor{navylight!5}
+Typebot &
+\textit{« Un assistant sur mon site répond aux questions de mes prospects et prend des rendez-vous, même le dimanche à 22h. »} &
+Leads qualifiés \textbf{24/7} sans intervention humaine. Taux de conversion amélioré \\
+
+\rowcolor{rowgray}
+Azure OpenAI &
+\textit{« J'ai les mêmes capacités IA qu'OpenAI, mais mes données ne quittent jamais l'Union Européenne. »} &
+\textbf{Conformité RGPD} stricte. Argument de confiance pour clients grands comptes \\
+
+% ── R&D ───────────────────────────────────────────────────────
+\multicolumn{3}{l}{\cellcolor{colgold!12}\textcolor{colgold}{\textbf{$\triangleright$ R\&D — Valeur différenciante à venir}}} \\[2pt]
+
+\rowcolor{colgold!5}
+Keycloak &
+\textit{« Un seul mot de passe pour accéder à Odoo, Teams, mon portail RH et tous mes outils métier. »} &
+\textbf{Sécurité renforcée}. Fin de la gestion de 15 comptes différents. Onboarding simplifié \\
+
+\rowcolor{rowgray}
+Ollama &
+\textit{« J'utilise une IA pour analyser mes données financières et juridiques sensibles. Aucune donnée ne sort de mon réseau. »} &
+\textbf{Confidentialité totale}. Idéal secteurs sensibles : médical, juridique, notariat, RH \\
+
+\end{longtable}
+\end{footnotesize}

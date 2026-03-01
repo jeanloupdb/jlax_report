@@ -1,0 +1,39 @@
+# =============================================================
+#  Déploiement VPS — Portail documents Jlax Expertise
+#
+#  Pré-requis :
+#    - Traefik en cours sur le réseau "traefik-public"
+#    - Variable DOMAIN définie (ex: docs.jlax-expertise.fr)
+#
+#  Lancement :
+#    DOMAIN=docs.jlax-expertise.fr docker compose -f docker-compose.deploy.yml up -d
+#
+#  Ou avec .env :
+#    echo "DOMAIN=docs.jlax-expertise.fr" > .env
+#    docker compose -f docker-compose.deploy.yml up -d
+# =============================================================
+
+version: "3.8"
+
+services:
+  jlax-docs:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jlax-docs.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.jlax-docs.entrypoints=websecure"
+      - "traefik.http.routers.jlax-docs.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jlax-docs.loadbalancer.server.port=80"
+      # Optionnel : basic auth (décommenter + générer avec htpasswd)
+      # - "traefik.http.routers.jlax-docs.middlewares=jlax-auth"
+      # - "traefik.http.middlewares.jlax-auth.basicauth.users=admin:$$apr1$$..."
+
+networks:
+  traefik-public:
+    external: true

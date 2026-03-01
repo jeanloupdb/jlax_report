@@ -1,0 +1,62 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#1B2A4A', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#2563EB', 'lineColor': '#2563EB', 'secondaryColor': '#F1F5F9', 'tertiaryColor': '#E0F2FE'}}}%%
+
+graph TB
+    subgraph VPS1["🖥️  VPS-1 — Core Services  (Hetzner CX21 · ~25 €/mois)"]
+        n8n["⚙️ n8n\nOrchestration"]
+        grafana["📊 Grafana\nDashboard"]
+        metabase["📈 Metabase\nReporting"]
+        flowise["🤖 Flowise\nAssistant IA"]
+        uptime["🔔 Uptime Kuma\nMonitoring"]
+        gophish["🎣 GoPhish\nPhishing"]
+        vault["🔑 Vaultwarden\nPasswords"]
+        traefik["🔒 Traefik\nSSL / Proxy"]
+        portainer["🐳 Portainer\nContainers"]
+    end
+
+    subgraph VPS2["🛡️  VPS-2 — Sécurité  (Hetzner CX31 · ~45 €/mois)"]
+        wazuh["🔍 Wazuh\nSIEM + EDR"]
+        crowdsec["🚫 CrowdSec\nIDS collaboratif"]
+    end
+
+    subgraph APIS["☁️  APIs & Intégrations client"]
+        m365["📧 Microsoft 365\nGraph API"]
+        openai["🧠 OpenAI API\nGPT-4o-mini"]
+        odoo["📋 Odoo\nREST API"]
+        securesc["🔐 Secure Score\nAPI Microsoft"]
+    end
+
+    subgraph BACKUP["💾  Sauvegarde"]
+        restic["📦 Restic\nChiffrement AES-256"]
+        b2["☁️ Backblaze B2\n~0.006 $/Go"]
+    end
+
+    subgraph CLIENT["👔  Utilisateur final (invisible)"]
+        outlook["📨 Outlook"]
+        teams["💬 Teams"]
+        sharepoint["📁 SharePoint"]
+    end
+
+    n8n -->|"webhooks / scheduler"| m365
+    n8n -->|"prompts"| openai
+    n8n -->|"API REST"| odoo
+    n8n -->|"métriques"| grafana
+    n8n -->|"alertes"| wazuh
+    n8n -->|"rapports PDF"| outlook
+
+    m365 -.->|"events"| outlook
+    m365 -.->|"events"| teams
+    m365 -.->|"documents"| sharepoint
+
+    flowise -->|"RAG"| sharepoint
+    flowise -->|"bot"| teams
+
+    wazuh -->|"logs"| crowdsec
+    restic -->|"backup chiffré"| b2
+
+    securesc -->|"score"| n8n
+
+    style VPS1 fill:#E0F2FE,stroke:#2563EB,color:#1B2A4A
+    style VPS2 fill:#FEE2E2,stroke:#DC2626,color:#1B2A4A
+    style APIS fill:#D1FAE5,stroke:#16A34A,color:#1B2A4A
+    style BACKUP fill:#FEF3C7,stroke:#D97706,color:#1B2A4A
+    style CLIENT fill:#F3E8FF,stroke:#9333EA,color:#1B2A4A

@@ -1,0 +1,133 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{GoPhish}
+\newcommand{\ficheCategorie}{Cybersécurité — Simulation de Phishing}
+\newcommand{\fichePack}{Core Pack}
+\newcommand{\fichePackColor}{colgreen}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche GoPhish},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+GoPhish est une plateforme open-source de simulation de phishing. Elle permet d'envoyer de faux emails frauduleux aux collaborateurs du client pour tester leur vigilance, mesurer le taux de clics, et identifier les personnes à former. C'est un outil à fort impact commercial : les dirigeants \textbf{voient concrètement} le risque cyber de leur entreprise, ce qui justifie toute la stack sécurité.
+
+\begin{pointcle}
+  GoPhish est le meilleur \textbf{outil de vente} de la stack sécurité. Un rapport de campagne montrant 40\% de taux de clic convainc n'importe quel dirigeant de l'utilité d'un SIEM et d'une formation.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Vous nous avez envoyé un faux email de phishing la semaine dernière — 12 de nos 30 collaborateurs ont cliqué et entré leur mot de passe. On a reçu un rapport détaillé avec les noms et les départements concernés. On a pu former immédiatement les personnes à risque. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item Réduction du taux de clic de \textbf{40\% → 5\%} après 3 campagnes de sensibilisation
+  \item Preuve de formation pour les assurances cyber (tarifs réduits)
+  \item Rapport PDF automatique généré par n8n après chaque campagne
+  \item Conformité aux recommandations ANSSI et RGPD sur la sensibilisation
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} Domaine d'envoi dédié (ex: \texttt{securite-alerte.fr}) différent du domaine client, SPF/DKIM configurés, VPS séparé recommandé pour éviter toute association avec l'infrastructure principale.
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — GoPhish}]
+version: "3.8"
+services:
+  gophish:
+    image: gophish/gophish:latest
+    restart: always
+    ports:
+      - "3333:3333"   # Admin UI (interne uniquement)
+      - "80:80"       # Landing pages HTTP
+      - "443:443"     # Landing pages HTTPS
+    volumes:
+      - ./config.json:/opt/gophish/config.json
+      - ./ssl:/opt/gophish/ssl
+      - gophish_data:/opt/gophish/db
+    environment:
+      GOPHISH_INITIAL_ADMIN_PASSWORD: ${GOPHISH_ADMIN_PASSWORD}
+
+volumes:
+  gophish_data:
+\end{lstlisting}
+
+\begin{lstlisting}[style=terminal, caption={Configuration DNS du domaine d'envoi}]
+# DNS du domaine de simulation (ex: securite-alerte.fr)
+# Enregistrements SPF
+securite-alerte.fr. TXT "v=spf1 ip4:VPS_IP -all"
+
+# DKIM (générer avec opendkim-genkey)
+mail._domainkey.securite-alerte.fr. TXT "v=DKIM1; k=rsa; p=MIGfMA..."
+
+# DMARC
+_dmarc.securite-alerte.fr. TXT "v=DMARC1; p=reject; rua=mailto:dmarc@jlax-expertise.fr"
+
+# MX (pour les out-of-office de retour)
+securite-alerte.fr. MX 10 mail.securite-alerte.fr.
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Workflow d'une campagne type :}
+\begin{enumerate}
+  \item \textbf{Sending Profile} : serveur SMTP du domaine d'envoi dédié, \texttt{From: Sécurité IT <noreply@securite-alerte.fr>}
+  \item \textbf{Email Template} : imiter un email Microsoft / DHL / impôts (selon le secteur client)
+  \item \textbf{Landing Page} : fausse page de connexion qui capture le clic (sans stocker les mots de passe réels)
+  \item \textbf{Users \& Groups} : importer la liste des collaborateurs (CSV : prénom, nom, email, département)
+  \item \textbf{Campaign} : lancer sur 3 jours, horaires bureaux (9h-17h)
+  \item \textbf{Results} : exporter CSV → n8n génère le rapport PDF → envoi au dirigeant
+\end{enumerate}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle}} \\
+\midrule
+n8n & Déclenchement de campagnes planifiées, récupération des résultats, génération rapport PDF \\
+\rowcolor{rowgray}
+OpenAI API & Génération automatique de templates d'emails de phishing réalistes \\
+MS Graph API & Import automatique de la liste des collaborateurs depuis Azure AD \\
+\rowcolor{rowgray}
+Grafana & Dashboard de suivi : taux de clic par campagne, évolution dans le temps \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item \textbf{Accord écrit obligatoire} du dirigeant avant toute campagne (clause dans le contrat)
+  \item Les collaborateurs \textbf{ne savent pas} que des tests sont effectués — c'est le principe
+  \item Le domaine d'envoi \textbf{ne ressemble pas} au domaine Jlax pour éviter toute confusion
+  \item L'interface admin GoPhish n'est accessible qu'en interne (pas de lien public)
+  \item Après la campagne : le dirigeant reçoit le rapport, il gère la communication interne
+\end{itemize}
+
+\begin{attention}
+  Obtenir systématiquement une \textbf{autorisation écrite signée} avant toute campagne de phishing. Cette autorisation doit préciser la période, les cibles et l'objectif. Sans cela, l'opération peut être considérée comme une attaque réelle.
+\end{attention}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que le domaine d'envoi n'est pas en liste noire (MXToolbox → Blacklist check)
+    \item[$\square$] Tester l'envoi d'un email de test depuis le domaine dédié
+    \item[$\square$] Planifier la prochaine campagne trimestrielle avec le dirigeant
+    \item[$\square$] Archiver les résultats de la campagne précédente
+    \item[$\square$] Vérifier le renouvellement SSL du domaine de landing pages
+  \end{itemize}
+\end{checklist}
+
+\end{document}

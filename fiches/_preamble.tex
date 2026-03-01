@@ -1,0 +1,248 @@
+% =============================================================
+%  _preamble.tex — Preamble partagé pour les fiches outils
+%  Jlax Expertise
+%  Usage : \input{_preamble} dans chaque fiche
+% =============================================================
+
+% ── Encodage & langue ─────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+
+% ── Mise en page ─────────────────────────────────────────────
+\usepackage[top=2cm, bottom=2.5cm, left=2cm, right=2cm]{geometry}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{microtype}
+\usepackage{lmodern}
+\usepackage{parskip}
+\setlength{\parskip}{5pt}
+
+% ── Couleurs ─────────────────────────────────────────────────
+\usepackage[dvipsnames, table]{xcolor}
+\definecolor{navydark}{RGB}{27, 42, 74}
+\definecolor{navylight}{RGB}{37, 99, 235}
+\definecolor{rowgray}{RGB}{245, 247, 250}
+\definecolor{tabheader}{RGB}{27, 42, 74}
+\definecolor{colgreen}{RGB}{22, 163, 74}
+\definecolor{colorange}{RGB}{217, 119, 6}
+\definecolor{colred}{RGB}{220, 38, 38}
+\definecolor{colgold}{RGB}{161, 98, 7}
+\definecolor{accentline}{RGB}{37, 99, 235}
+\definecolor{codebg}{RGB}{245, 245, 245}
+\definecolor{codeborder}{RGB}{200, 200, 200}
+
+% ── Graphiques ───────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{tikz}
+
+% ── Tableaux ─────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{makecell}
+
+% ── Boîtes colorées ──────────────────────────────────────────
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable, listings}
+
+% ── Symboles mathématiques (pour \square dans checklists) ────
+\usepackage{amssymb}
+
+% ── Code / Terminal ───────────────────────────────────────────
+\usepackage{listings}
+
+% Support des caractères accentués français dans lstlisting
+% (listings ne passe pas par inputenc — literate obligatoire)
+\lstset{
+  extendedchars=true,
+  literate=
+    {é}{{\'{e}}}1 {è}{{\`{e}}}1 {ê}{{\^{e}}}1 {ë}{{\"e}}1
+    {à}{{\`{a}}}1 {â}{{\^{a}}}1 {ä}{{\"a}}1
+    {î}{{\^{i}}}1 {ï}{{\"i}}1
+    {ô}{{\^{o}}}1 {ö}{{\"o}}1
+    {ù}{{\`{u}}}1 {û}{{\^{u}}}1 {ü}{{\"u}}1
+    {ç}{{\c{c}}}1
+    {É}{{\'{E}}}1 {È}{{\`{E}}}1 {Ê}{{\^{E}}}1
+    {À}{{\`{A}}}1 {Â}{{\^{A}}}1
+    {Î}{{\^{I}}}1
+    {Ô}{{\^{O}}}1
+    {Ù}{{\`{U}}}1 {Û}{{\^{U}}}1
+    {Ç}{{\c{C}}}1
+    {«}{{\guillemotleft{}}}1 {»}{{\guillemotright{}}}1
+    {–}{--}1 {—}{---}1
+    {×}{$\times$}1 {→}{$\rightarrow$}1,
+}
+
+% Style terminal (bash)
+\lstdefinestyle{terminal}{
+  backgroundcolor=\color{navydark!95},
+  basicstyle=\ttfamily\footnotesize\color{white},
+  breaklines=true,
+  breakatwhitespace=true,
+  frame=none,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=6pt,
+  xrightmargin=6pt,
+  aboveskip=6pt,
+  belowskip=6pt,
+}
+
+% Style YAML / Docker Compose
+\lstdefinestyle{yamlstyle}{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize\color{navydark},
+  breaklines=true,
+  breakatwhitespace=true,
+  frame=single,
+  rulecolor=\color{codeborder},
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=6pt,
+  xrightmargin=6pt,
+  aboveskip=6pt,
+  belowskip=6pt,
+  commentstyle=\color{gray},
+  keywordstyle=\color{navylight}\bfseries,
+  stringstyle=\color{colgreen!70!black},
+  morekeywords={version, services, image, ports, volumes, environment, restart,
+                networks, depends_on, command, labels, traefik},
+  morecomment=[l]{\#},
+  morestring=[b]",
+  morestring=[b]',
+}
+
+% ── Liens ────────────────────────────────────────────────────
+\usepackage[colorlinks=true,
+            linkcolor=navydark,
+            urlcolor=navylight,
+            citecolor=navydark]{hyperref}
+
+% ── Listes ───────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{noitemsep, topsep=4pt, leftmargin=1.5em}
+\setlist[enumerate]{noitemsep, topsep=4pt, leftmargin=1.5em}
+
+% ── Titres de sections ───────────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\section}
+  {\color{navydark}\large\bfseries}
+  {\thesection}{0.8em}{}[\color{accentline}\titlerule]
+\titleformat{\subsection}
+  {\color{navydark}\normalsize\bfseries}
+  {\thesubsection}{0.8em}{}
+\titlespacing{\section}{0pt}{12pt}{6pt}
+\titlespacing{\subsection}{0pt}{8pt}{4pt}
+
+% ── En-têtes & pieds de page ─────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{navydark}\textbf{Jlax Expertise} — Fiche Outil}
+\fancyhead[R]{\small\color{navydark}\ficheNom}
+\fancyfoot[C]{\small\color{gray}Page \thepage\ / \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ── Commandes personnalisées ─────────────────────────────────
+
+% Icônes impact
+\newcommand{\invisible}{\textcolor{colgreen}{\textbullet}~Invisible}
+\newcommand{\leger}{\textcolor{colorange}{\textbullet}~Léger}
+\newcommand{\fort}{\textcolor{colred}{\textbullet}~Fort}
+
+% Badge pack coloré
+\newcommand{\badgepack}{%
+  \colorbox{\fichePackColor!15}{%
+    \textcolor{\fichePackColor}{\textbf{\small\fichePack}}%
+  }%
+}
+
+% Header principal de la fiche (tcolorbox navydark)
+\newcommand{\ficheHeader}{%
+  \thispagestyle{empty}%
+  \begin{tcolorbox}[
+    enhanced,
+    colback=navydark,
+    colframe=navydark,
+    arc=4pt,
+    boxrule=0pt,
+    left=12pt, right=12pt, top=10pt, bottom=10pt,
+  ]
+    \begin{minipage}[t]{0.72\textwidth}
+      {\color{white}\Huge\bfseries \ficheNom}\\[4pt]
+      {\color{navylight!70}\large \ficheCategorie}
+    \end{minipage}%
+    \hfill%
+    \begin{minipage}[t]{0.25\textwidth}
+      \raggedleft
+      \vspace{6pt}
+      \colorbox{\fichePackColor!20}{%
+        \textcolor{\fichePackColor}{\textbf{\small \fichePack}}%
+      }
+    \end{minipage}
+  \end{tcolorbox}
+  \vspace{0.8em}
+  \pagestyle{fancy}%
+}
+
+% Boîte "Point clé"
+\newtcolorbox{pointcle}[1][]{
+  enhanced, breakable,
+  colback=navydark!5, colframe=navydark,
+  fonttitle=\bfseries\small, title=Point clé,
+  left=6pt, right=6pt, top=4pt, bottom=4pt,
+  #1
+}
+
+% Boîte "Attention"
+\newtcolorbox{attention}[1][]{
+  enhanced, breakable,
+  colback=colred!8, colframe=colred,
+  fonttitle=\bfseries\small, title=Attention,
+  left=6pt, right=6pt, top=4pt, bottom=4pt,
+  #1
+}
+
+% Boîte "Ce que voit le client" (verbatim client)
+\newtcolorbox{clientbox}[1][]{
+  enhanced, breakable,
+  colback=navylight!5, colframe=navylight,
+  fonttitle=\bfseries\small, title=Ce que voit et ressent le client,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  #1
+}
+
+% Boîte "Checklist maintenance"
+\newtcolorbox{checklist}[1][]{
+  enhanced, breakable,
+  colback=colgreen!5, colframe=colgreen,
+  fonttitle=\bfseries\small, title=Maintenance mensuelle,
+  left=6pt, right=6pt, top=4pt, bottom=4pt,
+  #1
+}
+
+% Boîte terminal inline
+\newcommand{\cmdbox}[1]{%
+  \begin{tcolorbox}[
+    enhanced,
+    colback=navydark!95,
+    colframe=navydark,
+    arc=2pt,
+    boxrule=0pt,
+    left=6pt, right=6pt, top=3pt, bottom=3pt,
+  ]
+    \ttfamily\footnotesize\color{white} #1
+  \end{tcolorbox}
+}
+
+% ── Césure française ─────────────────────────────────────────
+\hyphenation{Au-to-ma-ti-sa-tion au-to-ma-ti-sa-tion
+             In-té-gra-tion in-té-gra-tion
+             Cyber-sé-cu-ri-té cyber-sé-cu-ri-té
+             Or-ches-tra-tion or-ches-tra-tion
+             Mo-ni-to-ring mo-ni-to-ring
+             Con-fi-gu-ra-tion con-fi-gu-ra-tion}

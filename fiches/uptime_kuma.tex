@@ -1,0 +1,144 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Uptime Kuma}
+\newcommand{\ficheCategorie}{Monitoring — Disponibilité des Services}
+\newcommand{\fichePack}{Core Pack}
+\newcommand{\fichePackColor}{colgreen}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Uptime Kuma},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Uptime Kuma est un outil de monitoring de disponibilité auto-hébergé. Il vérifie en permanence que les sites web, APIs, et services TCP/ping du client sont accessibles. En cas de panne, il envoie immédiatement une notification (Teams, email, SMS) au dirigeant et à Jlax — \textbf{avant que les clients du client ne signalent le problème}. Installation en moins de 2 heures.
+
+\begin{pointcle}
+  Uptime Kuma est la démonstration la plus immédiate de la valeur de la stack : dès la première panne détectée, le client comprend concrètement l'intérêt du monitoring.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Je suis prévenu par message Teams dès que mon site ou mon ERP est inaccessible — avant que mes clients me le signalent. La dernière fois, mon site était tombé à 23h, j'ai reçu l'alerte immédiatement et vous l'aviez rétabli avant 8h le lendemain. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item Réactivité maximale : \textbf{alerte en moins de 60 secondes} après une panne
+  \item Image professionnelle préservée auprès des clients finaux
+  \item Historique de disponibilité (SLA) pour justifier la qualité de service
+  \item Coût : \textbf{5\,€/mois} (partage du VPS Core, très léger en ressources)
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} Docker installé sur VPS-1 Core, Traefik pour l'accès HTTPS.
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — Uptime Kuma}]
+version: "3.8"
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    restart: always
+    volumes:
+      - uptime_data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.uptime.rule=Host(`status.votredomaine.com`)"
+      - "traefik.http.routers.uptime.tls.certresolver=letsencrypt"
+      - "traefik.http.services.uptime.loadbalancer.server.port=3001"
+
+volumes:
+  uptime_data:
+\end{lstlisting}
+
+\begin{lstlisting}[style=terminal, caption={Démarrage et premier accès}]
+docker compose up -d
+# Accéder à https://status.votredomaine.com
+# Créer le compte administrateur (première connexion uniquement)
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Monitors à configurer par défaut pour chaque client :}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{3cm} p{2cm} p{2.5cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Service}} & \textcolor{white}{\textbf{Type}} & \textcolor{white}{\textbf{Intervalle}} & \textcolor{white}{\textbf{Notes}} \\
+\midrule
+Site web client & HTTP(S) & 60s & Check code HTTP 200 \\
+\rowcolor{rowgray}
+n8n & HTTP(S) & 60s & URL health endpoint \\
+Grafana & HTTP(S) & 60s & Dashboard principal \\
+\rowcolor{rowgray}
+Odoo (si déployé) & HTTP(S) & 60s & Page d'accueil \\
+VPS-1 ping & Ping & 30s & Disponibilité hôte \\
+\rowcolor{rowgray}
+VPS-2 ping & Ping & 30s & Disponibilité hôte \\
+Port SMTP client & TCP & 5min & Si serveur mail dédié \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Configuration des notifications :}
+\begin{enumerate}
+  \item Settings → Notifications → Add → \textbf{Microsoft Teams}
+  \item Webhook URL Teams du canal "Alertes IT" du client
+  \item Tester avec le bouton "Test"
+  \item Ajouter également une notification email (via n8n ou SMTP direct)
+\end{enumerate}
+
+\textbf{Page de statut publique (optionnel) :}
+\begin{itemize}
+  \item Status Page → Create → sélectionner les monitors à afficher
+  \item URL publique : \texttt{https://status.votredomaine.com}
+  \item Peut être partagée avec les clients du client (transparence)
+\end{itemize}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle}} \\
+\midrule
+n8n & Réception des webhooks Uptime Kuma → escalade si pas de réponse en 15min \\
+\rowcolor{rowgray}
+MS Graph API (Teams) & Notification directe dans le canal Teams du client \\
+Grafana & Intégration des métriques de disponibilité dans le dashboard principal \\
+\rowcolor{rowgray}
+Traefik & Expose la page de statut publique via SSL automatique \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item L'interface Uptime Kuma est accessible uniquement à Jlax Expertise
+  \item La page de statut publique est \textbf{optionnelle} : le client peut la partager ou non
+  \item Les notifications arrivent directement dans le canal Teams existant — pas de nouvel outil
+  \item Le client ne voit que les alertes quand un problème survient — le monitoring est silencieux
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que tous les monitors sont au vert (0 incidents actifs)
+    \item[$\square$] Consulter le rapport de disponibilité du mois (objectif : >99,5\%)
+    \item[$\square$] Tester les notifications : envoyer un test Teams pour chaque client
+    \item[$\square$] Mettre à jour l'image : \texttt{docker compose pull \&\& docker compose up -d}
+    \item[$\square$] Vérifier si de nouveaux services méritent d'être monitorés
+  \end{itemize}
+\end{checklist}
+
+\end{document}

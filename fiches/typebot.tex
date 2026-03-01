@@ -1,0 +1,160 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Typebot}
+\newcommand{\ficheCategorie}{Chatbot Web — Qualification de Leads \& Support}
+\newcommand{\fichePack}{Option Premium}
+\newcommand{\fichePackColor}{navylight}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Typebot},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Typebot est une plateforme open-source de création de chatbots conversationnels. Il permet de déployer sur le site web du client un assistant qui qualifie les prospects, prend des rendez-vous, répond aux questions fréquentes, et transmet les informations collectées directement à n8n et Odoo. Disponible 24h/24, 7j/7, sans intervention humaine. L'interface de création est no-code et intuitive.
+
+\begin{pointcle}
+  Typebot est particulièrement adapté aux clients avec un site web recevant des demandes de contact : prestataires de services, cabinets, artisans, commerces B2B. ROI visible dès le premier lead qualifié hors horaires bureaux.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Un assistant apparaît sur mon site web et répond aux questions de mes prospects, même le dimanche à 22h. Il qualifie leur besoin, propose des créneaux de rendez-vous et m'envoie un résumé par Teams. Le lundi matin j'ai 3 rendez-vous qualifiés qui m'attendent — sans avoir rien fait. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item Leads qualifiés \textbf{24h/24, 7j/7} sans intervention humaine
+  \item Taux de conversion amélioré : les prospects qualifiés convertissent 2× mieux
+  \item Réduction des appels entrants non qualifiés (filtrés par le bot)
+  \item Formulaires de contact remplacés par une expérience conversationnelle
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} Docker sur VPS-1 Core, Traefik, domaine dédié pour le viewer (bot public).
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — Typebot (Builder + Viewer)}]
+version: "3.8"
+services:
+  typebot-builder:
+    image: baptistearno/typebot-builder:latest
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://typebot:${TYPEBOT_DB_PASSWORD}@typebot-db/typebot
+      NEXTAUTH_URL: https://typebot.votredomaine.com
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      ENCRYPTION_SECRET: ${ENCRYPTION_SECRET}
+      ADMIN_EMAIL: admin@jlax-expertise.fr
+      SMTP_HOST: smtp.votredomaine.com
+      SMTP_PORT: 587
+      SMTP_USERNAME: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+    depends_on:
+      - typebot-db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.typebot-builder.rule=Host(`typebot.votredomaine.com`)"
+      - "traefik.http.routers.typebot-builder.tls.certresolver=letsencrypt"
+
+  typebot-viewer:
+    image: baptistearno/typebot-viewer:latest
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://typebot:${TYPEBOT_DB_PASSWORD}@typebot-db/typebot
+      NEXTAUTH_URL: https://bot.votredomaine.com
+    depends_on:
+      - typebot-db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.typebot-viewer.rule=Host(`bot.votredomaine.com`)"
+      - "traefik.http.routers.typebot-viewer.tls.certresolver=letsencrypt"
+
+  typebot-db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: typebot
+      POSTGRES_USER: typebot
+      POSTGRES_PASSWORD: ${TYPEBOT_DB_PASSWORD}
+    volumes:
+      - typebot_db:/var/lib/postgresql/data
+
+volumes:
+  typebot_db:
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Création d'un bot de qualification de leads (no-code) :}
+\begin{enumerate}
+  \item Typebot Builder → \textbf{New Typebot} → partir d'un template ou de zéro
+  \item Construire le flow : Message → Input (texte/choix) → Message → Input → …
+  \item Bloc \textbf{Webhook} → envoyer les données à n8n : \texttt{https://n8n.votredomaine.com/webhook/typebot-lead}
+  \item n8n reçoit : créer le contact dans Odoo + notifier Teams + envoyer email de confirmation
+  \item Publier → récupérer le script d'embed
+\end{enumerate}
+
+\textbf{Embed sur le site web du client :}
+\begin{lstlisting}[style=yamlstyle, caption={Script d'intégration sur le site client}]
+<!-- Ajouter avant </body> sur le site web du client -->
+<script type="module">
+  import Typebot from 'https://cdn.jsdelivr.net/npm/@typebot.io/js@0.3/dist/web.js';
+  Typebot.initBubble({
+    typebot: "votre-typebot-id",
+    apiHost: "https://bot.votredomaine.com",
+    previewMessage: {
+      message: "Bonjour ! Une question ?",
+      autoShowDelay: 5000,
+    },
+    theme: {
+      button: { backgroundColor: "#1b2a4a" },
+    },
+  });
+</script>
+\end{lstlisting}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle}} \\
+\midrule
+n8n & Réception des leads via webhook → création Odoo + notification Teams \\
+\rowcolor{rowgray}
+Odoo & Création automatique du contact/lead depuis les données du bot \\
+MS Graph API (Teams) & Notification immédiate au commercial : nouveau lead qualifié \\
+\rowcolor{rowgray}
+OpenAI API & Réponses en langage naturel (blocs IA dans le flow Typebot) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item Pour les visiteurs du site : le bot ressemble à un chat de support standard (pas "Typebot")
+  \item Le client configure le contenu dans l'interface Builder — visuellement simple
+  \item L'interface Builder est sous le domaine Jlax — séparée du viewer public
+  \item Toutes les données collectées restent sur l'infrastructure auto-hébergée
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que le bot s'affiche correctement sur le site web du client
+    \item[$\square$] Tester le flow complet : soumettre un lead → vérifier réception dans Odoo et Teams
+    \item[$\square$] Consulter les analytics Typebot : nombre de sessions, taux de complétion
+    \item[$\square$] Mettre à jour les images : \texttt{docker compose pull \&\& docker compose up -d}
+    \item[$\square$] Ajuster le flow selon les feedbacks du client (questions fréquentes non couvertes)
+  \end{itemize}
+\end{checklist}
+
+\end{document}

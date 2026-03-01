@@ -1,0 +1,139 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Wazuh}
+\newcommand{\ficheCategorie}{SIEM / EDR — Détection \& Réponse aux Incidents}
+\newcommand{\fichePack}{Core Pack}
+\newcommand{\fichePackColor}{colgreen}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Wazuh},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Wazuh est une plateforme SIEM (Security Information and Event Management) et EDR (Endpoint Detection and Response) open-source. Il collecte les logs et événements de tous les endpoints (Windows, Linux, serveurs) et génère des alertes en temps réel sur les comportements suspects. C'est la pièce maîtresse de la sécurité opérationnelle : il détecte les intrusions, les malwares, les accès anormaux, et les violations de politique de sécurité.
+
+\begin{pointcle}
+  Wazuh est \textbf{10× moins cher} qu'un SOC traditionnel pour des PME. Il détecte en \textbf{minutes} ce qu'un audit annuel découvre en semaines.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« J'ai reçu une alerte sur mon téléphone à 3h du matin : un serveur tentait de se connecter depuis une IP russe. En 10 minutes, c'était bloqué. Sans vous, on n'aurait su que lundi matin — et là c'était trop tard. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item Détection en \textbf{minutes} vs semaines pour un audit annuel
+  \item Couverture 24h/24, 7j/7 sans astreinte humaine
+  \item Conformité RGPD (traçabilité des accès, détection de fuites)
+  \item Argument solide pour les assurances cyber et les grands comptes
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} VPS-2 dédié sécurité (Hetzner CX31 minimum : 2 vCPU, 8 GB RAM, 80 GB SSD), Docker + Docker Compose. Le stack Wazuh comprend 3 composants : Manager, Indexer (OpenSearch), Dashboard.
+
+\begin{lstlisting}[style=terminal, caption={Déploiement Wazuh via Docker officiel}]
+# Cloner le dépôt officiel
+git clone https://github.com/wazuh/wazuh-docker.git -b v4.9.0
+cd wazuh-docker/single-node
+
+# Générer les certificats SSL
+docker compose -f generate-indexer-certs.yml run --rm generator
+
+# Lancer le stack complet (3 conteneurs)
+docker compose up -d
+
+# Vérifier le statut
+docker compose ps
+# wazuh.manager   Up
+# wazuh.indexer   Up
+# wazuh.dashboard Up
+
+# Accéder au dashboard (port 443)
+# https://VPS_IP → admin / SecretPassword (à changer)
+\end{lstlisting}
+
+\textbf{Installation de l'agent sur un poste Windows client :}
+\begin{lstlisting}[style=terminal]
+# Sur le poste Windows (PowerShell administrateur)
+Invoke-WebRequest -Uri https://packages.wazuh.com/4.x/windows/wazuh-agent-4.9.0-1.msi `
+  -OutFile wazuh-agent.msi
+
+msiexec /i wazuh-agent.msi `
+  WAZUH_MANAGER="IP_VPS2" `
+  WAZUH_AGENT_NAME="PC-NomPoste" `
+  /quiet
+
+# Démarrer l'agent
+net start WazuhSvc
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Règles d'alerte prioritaires à activer :}
+\begin{itemize}
+  \item \textbf{Authentication failures} : >5 échecs en 60s → alerte critique
+  \item \textbf{Brute force} : >10 tentatives depuis la même IP → blocage CrowdSec
+  \item \textbf{Privilege escalation} : sudo/admin inattendu → alerte immédiate
+  \item \textbf{File integrity monitoring} : surveiller \texttt{C:\textbackslash Windows\textbackslash System32}, \texttt{/etc/passwd}
+  \item \textbf{Rootkit detection} : scan hebdomadaire automatique
+\end{itemize}
+
+\textbf{Intégration notification Teams via n8n :}
+\begin{lstlisting}[style=yamlstyle, caption={Webhook Wazuh → n8n (ossec.conf)}]
+# Dans /var/ossec/etc/ossec.conf du manager
+<integration>
+  <name>custom-webhook</name>
+  <hook_url>https://n8n.votredomaine.com/webhook/wazuh-alert</hook_url>
+  <level>10</level>  <!-- Alertes niveau 10+ uniquement -->
+  <alert_format>json</alert_format>
+</integration>
+\end{lstlisting}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle}} \\
+\midrule
+n8n & Réception des alertes webhook → notification Teams/SMS/email dirigeant \\
+\rowcolor{rowgray}
+CrowdSec & Partage des IPs malveillantes détectées → blocage automatique \\
+Grafana & Dashboard sécurité temps réel : alertes/jour, top règles déclenchées \\
+\rowcolor{rowgray}
+MS Graph API & Corrélation avec les logs Azure AD (connexions suspectes M365) \\
+Restic + B2 & Sauvegarde des logs Wazuh pour conservation légale 12 mois \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item L'agent Wazuh est installé \textbf{silencieusement} sur les postes (MSI en mode quiet)
+  \item Aucune interface visible pour les collaborateurs : tout passe par le dashboard centralisé
+  \item Les alertes arrivent \textbf{uniquement au dirigeant et à Jlax} — pas aux employés
+  \item Le VPS-2 sécurité est séparé du VPS-1 Core : compromission d'un client n'affecte pas les autres
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que tous les agents sont actifs dans le dashboard Wazuh
+    \item[$\square$] Contrôler le nombre d'alertes de la semaine (tableau de bord)
+    \item[$\square$] S'assurer que les alertes critiques (niveau 12+) ont bien été traitées
+    \item[$\square$] Vérifier l'espace disque de l'indexer (logs OpenSearch) — purger si >80\%
+    \item[$\square$] Mettre à jour les règles de détection : \texttt{docker compose pull \&\& docker compose up -d}
+  \end{itemize}
+\end{checklist}
+
+\end{document}

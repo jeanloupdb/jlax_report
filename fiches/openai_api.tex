@@ -1,0 +1,137 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{OpenAI API}
+\newcommand{\ficheCategorie}{IA Générative — GPT-4o-mini / GPT-4o}
+\newcommand{\fichePack}{Core Pack}
+\newcommand{\fichePackColor}{colgreen}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche OpenAI API},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+L'API OpenAI fournit les capacités d'intelligence artificielle générative à toute la stack : résumé d'emails, rédaction de brouillons, classification de documents, extraction d'informations structurées, traduction, etc. Elle est consommée exclusivement par n8n — le client n'y accède jamais directement. Pour les données sensibles (RGPD), utiliser Azure OpenAI à la place (voir fiche dédiée).
+
+\begin{pointcle}
+  Modèle par défaut recommandé : \textbf{gpt-4o-mini} — excellent rapport qualité/coût pour les tâches PME. Réserver \textbf{gpt-4o} pour les tâches complexes (analyse juridique, synthèse longue).
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Un résumé de mes emails complexes apparaît automatiquement dans Teams. Mes brouillons de réponse sont déjà rédigés quand j'ouvre ma boîte mail. Les devis se rédigent en 2 minutes au lieu de 20. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item Rédaction \textbf{10× plus rapide} sur les communications courantes
+  \item Qualité homogène sur toutes les communications de l'entreprise
+  \item Résumé automatique des emails longs (>200 mots) en 3 points
+  \item Classification automatique des emails entrants (urgent / info / action requise)
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Étape 1 — Créer un compte et obtenir une clé API :}
+\begin{lstlisting}[style=terminal]
+# 1. Créer un compte sur platform.openai.com
+# 2. API keys → Create new secret key
+#    Name: jlax-prod-[CLIENT]
+#    Copier la clé (affichée une seule fois)
+
+# 3. Configurer les limites de dépenses :
+#    Settings → Billing → Set usage limits
+#    Hard limit: 100 EUR/mois (par client)
+#    Soft limit (alerte): 70 EUR/mois
+\end{lstlisting}
+
+\textbf{Étape 2 — Configurer dans n8n :}
+\begin{enumerate}
+  \item n8n → Credentials → Add → \textbf{OpenAI API}
+  \item API Key : coller la clé
+  \item Tester avec le node "OpenAI" → "Message a Model" → modèle \texttt{gpt-4o-mini}
+\end{enumerate}
+
+\section{Configuration de base}
+
+\textbf{Modèles recommandés par usage :}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{3.2cm} p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Usage}} & \textcolor{white}{\textbf{Modèle}} & \textcolor{white}{\textbf{Coût estimé}} \\
+\midrule
+Résumé email & gpt-4o-mini & $\sim$0,001\,€/email \\
+\rowcolor{rowgray}
+Rédaction brouillon & gpt-4o-mini & $\sim$0,002\,€/brouillon \\
+Analyse contrat & gpt-4o & $\sim$0,05\,€/document \\
+\rowcolor{rowgray}
+Classification & gpt-4o-mini & $\sim$0,0005\,€/email \\
+RAG (Flowise) & text-embedding-3-small & $\sim$0,02\,€/10k tokens \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Prompts types (à inclure dans les workflows n8n) :}
+
+\begin{lstlisting}[style=yamlstyle, caption={Prompt système pour résumé email}]
+# System prompt (constant)
+Tu es un assistant expert en communication B2B française.
+Résume cet email en 3 points maximum, en français,
+en commençant chaque point par un verbe d'action.
+Sois concis et professionnel. Maximum 80 mots.
+
+# User message (variable)
+Email à résumer : {{ $json.body.content }}
+\end{lstlisting}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle d'OpenAI API}} \\
+\midrule
+n8n & Consommation via le node OpenAI (chat, embeddings, analyse) \\
+\rowcolor{rowgray}
+Flowise & Embeddings pour l'indexation documentaire (RAG) \\
+MS Graph API & Les emails/documents M365 sont envoyés à OpenAI pour traitement \\
+\rowcolor{rowgray}
+Odoo & Enrichissement automatique des fiches contacts via IA \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item La clé API est stockée uniquement dans n8n — \textbf{jamais exposée au client}
+  \item Le client voit uniquement les résultats (résumés dans Teams, emails rédigés dans Outlook)
+  \item Créer \textbf{une clé API par client} pour isoler les coûts et les limites
+  \item Pour les données RGPD sensibles : basculer sur \textbf{Azure OpenAI} (données restent en EU)
+\end{itemize}
+
+\begin{attention}
+  Ne jamais envoyer à OpenAI : numéros de sécurité sociale, données médicales, données financières sensibles, ou toute donnée couverte par un secret professionnel. Pour ces cas : Azure OpenAI ou Ollama (voir fiches dédiées).
+\end{attention}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier la consommation mensuelle (platform.openai.com → Usage)
+    \item[$\square$] Contrôler que les limites de dépenses sont respectées
+    \item[$\square$] Vérifier les taux d'erreur API dans les executions n8n (timeout, rate limit)
+    \item[$\square$] Tester un workflow de résumé email pour valider la qualité des réponses
+    \item[$\square$] Mettre à jour vers de nouveaux modèles si disponibles et plus avantageux
+  \end{itemize}
+\end{checklist}
+
+\end{document}

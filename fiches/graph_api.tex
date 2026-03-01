@@ -1,0 +1,148 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Microsoft Graph API}
+\newcommand{\ficheCategorie}{Backbone M365 — Emails, Teams, SharePoint}
+\newcommand{\fichePack}{Core Pack}
+\newcommand{\fichePackColor}{colgreen}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Microsoft Graph API},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Microsoft Graph API est la porte d'entrée unifiée vers tout l'écosystème Microsoft 365 : Outlook, Teams, SharePoint, OneDrive, Calendar, Contacts, et plus. C'est le « câble » invisible qui relie les outils Microsoft du client à n8n et à toute la stack d'automatisation. Sans Graph API, aucune automatisation M365 n'est possible.
+
+\begin{pointcle}
+  Graph API est \textbf{gratuite} — aucun coût supplémentaire pour les tenants M365 existants. Le coût éventuel (0–30\,€/mois) correspond uniquement aux ressources de traitement sur n8n.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Mes emails Outlook sont traités automatiquement, mes réunions Teams se créent toutes seules depuis mes devis, et mes documents SharePoint sont indexés par l'assistant IA — sans que j'aie installé quoi que ce soit de nouveau. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item Automatisation complète de la messagerie Outlook sans plugin client
+  \item Création d'événements Teams/Calendar depuis n'importe quel workflow
+  \item Accès aux documents SharePoint pour l'assistant Flowise (RAG)
+  \item Secure Score automatique via l'API sécurité M365
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Étape 1 — Enregistrement de l'application dans Azure Active Directory :}
+
+\begin{lstlisting}[style=terminal, caption={Accès au portail Azure}]
+# Naviguer vers :
+# https://portal.azure.com → Azure Active Directory
+# → App registrations → New registration
+
+# Paramètres :
+# Name: JlaxExpertise-Automation
+# Supported account types: Accounts in this organizational directory only
+# Redirect URI: https://n8n.votredomaine.com/rest/oauth2-credential/callback
+\end{lstlisting}
+
+\textbf{Étape 2 — Permissions API minimales (principe du moindre privilège) :}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\ttfamily\small}p{5.5cm} p{2.2cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Permission}} & \textcolor{white}{\textbf{Type}} & \textcolor{white}{\textbf{Usage}} \\
+\midrule
+Mail.ReadWrite & Delegated & Lecture/écriture emails Outlook \\
+\rowcolor{rowgray}
+Mail.Send & Delegated & Envoi d'emails automatiques \\
+Calendars.ReadWrite & Delegated & Gestion des réunions Teams \\
+\rowcolor{rowgray}
+Files.ReadWrite.All & Delegated & Accès SharePoint/OneDrive \\
+User.Read & Delegated & Profil utilisateur \\
+\rowcolor{rowgray}
+SecurityEvents.Read.All & Application & Secure Score API \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Étape 3 — Récupérer les identifiants :}
+\begin{lstlisting}[style=terminal]
+# Dans Azure AD → App registration → Overview :
+# Application (client) ID : xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# Directory (tenant) ID   : yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
+
+# Dans Certificates & secrets → New client secret :
+# Description: n8n-prod
+# Expires: 24 months (noter la date d'expiration !)
+# Value: [copier immédiatement — affiché une seule fois]
+\end{lstlisting}
+
+\textbf{Étape 4 — Configurer dans n8n :}
+\begin{enumerate}
+  \item n8n → Credentials → Add → \textbf{Microsoft OAuth2 API}
+  \item Renseigner : Client ID, Client Secret, Tenant ID
+  \item Scopes : \texttt{offline\_access Mail.ReadWrite Mail.Send Calendars.ReadWrite Files.ReadWrite.All User.Read}
+  \item Cliquer "Connect my account" → authentifier avec le compte M365 client
+\end{enumerate}
+
+\section{Configuration de base}
+
+\textbf{Webhooks Microsoft (push vs poll) :}
+\begin{itemize}
+  \item Par défaut, n8n \textbf{interroge} (poll) Outlook toutes les minutes
+  \item Pour du temps réel : configurer un \textbf{webhook Graph} (subscription) via l'API
+  \item Endpoint de notification : \texttt{https://n8n.votredomaine.com/webhook/graph-notif}
+  \item Durée max d'une subscription : 3 jours → renouvellement automatique via workflow n8n dédié
+\end{itemize}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle de Graph API}} \\
+\midrule
+n8n & Trigger sur nouveaux emails, lecture/envoi, création d'événements \\
+\rowcolor{rowgray}
+Flowise & Indexation des fichiers SharePoint pour le RAG documentaire \\
+Secure Score API & Lecture du score de sécurité M365 mensuel \\
+\rowcolor{rowgray}
+Wazuh & Corrélation alertes sécurité → notification via email M365 \\
+Metabase & Export de données M365 (activité, licences) pour dashboards \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item L'application Azure est enregistrée dans le \textbf{tenant M365 du client} — droits limités
+  \item Le consentement est donné une fois par l'administrateur M365 du client
+  \item \textbf{Aucun logiciel supplémentaire} côté utilisateurs : tout passe par l'API cloud
+  \item La connexion est entièrement gérée par n8n côté prestataire
+\end{itemize}
+
+\begin{attention}
+  Documenter la \textbf{date d'expiration du client secret} (max 24 mois). Créer un workflow n8n d'alerte 30 jours avant expiration pour éviter toute interruption de service.
+\end{attention}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que les credentials OAuth2 n8n sont toujours valides (test de connexion)
+    \item[$\square$] Contrôler la date d'expiration du client secret dans Azure AD
+    \item[$\square$] Vérifier les logs de subscription Graph (renouvellement automatique OK)
+    \item[$\square$] Consulter Azure AD → Sign-in logs : aucune connexion suspecte
+    \item[$\square$] Renouveler le secret 30 jours avant expiration si nécessaire
+  \end{itemize}
+\end{checklist}
+
+\end{document}

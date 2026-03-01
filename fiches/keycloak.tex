@@ -1,0 +1,150 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Keycloak}
+\newcommand{\ficheCategorie}{SSO / Identité — Authentification Centralisée}
+\newcommand{\fichePack}{R\&D}
+\newcommand{\fichePackColor}{colgold}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Keycloak},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Keycloak est une plateforme open-source de gestion des identités et des accès (IAM — Identity and Access Management). Il centralise l'authentification de toutes les applications de la stack (Odoo, Grafana, Flowise, Paperless…) via le protocole OIDC/OAuth2. Un seul mot de passe pour accéder à tout. Complexité technique élevée (Cx=4) — recommandé pour les clients avec 20+ utilisateurs ou des exigences de sécurité avancées.
+
+\begin{pointcle}
+  Keycloak est en phase \textbf{R\&D} : fonctionnel et puissant, mais l'intégration avec les autres outils de la stack demande une expertise OIDC. Ne déployer que pour des clients avec un vrai besoin SSO multi-applications.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Un seul mot de passe pour accéder à Odoo, à mon tableau de bord Grafana, à mon assistant IA et à mon coffre-fort. Quand un employé arrive, je crée un compte Keycloak et il accède à tout. Quand il part, je désactive le compte et il perd tous ses accès en 10 secondes. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item \textbf{Sécurité renforcée} : un seul point de contrôle pour tous les accès
+  \item Fin de la gestion de 10–15 comptes différents par employé
+  \item Onboarding simplifié : 1 compte créé = accès à toutes les applications autorisées
+  \item Offboarding immédiat : désactivation = révocation de tous les accès en 10 secondes
+  \item MFA centralisé : activer une fois dans Keycloak → s'applique partout
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} VPS-1 Core avec 2+ GB RAM dédié à Keycloak, Docker, Traefik. PostgreSQL recommandé comme base de données (pas H2 en production).
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — Keycloak + PostgreSQL}]
+version: "3.8"
+services:
+  keycloak-db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - keycloak_db:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    restart: always
+    command: start --optimized
+    depends_on:
+      - keycloak-db
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_HOSTNAME: sso.votredomaine.com
+      KC_HTTPS_PORT: 8443
+      KC_PROXY: edge
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keycloak.rule=Host(`sso.votredomaine.com`)"
+      - "traefik.http.routers.keycloak.tls.certresolver=letsencrypt"
+      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
+
+volumes:
+  keycloak_db:
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Configuration du realm et des clients OIDC :}
+\begin{enumerate}
+  \item Accéder à \texttt{https://sso.votredomaine.com/admin} → créer le realm \texttt{client-nom}
+  \item Créer les clients OIDC pour chaque application :
+    \begin{itemize}
+      \item \textbf{Grafana} : Client ID \texttt{grafana}, Redirect URI \texttt{https://grafana.votredomaine.com/login/generic\_oauth}
+      \item \textbf{Odoo} : via le module \texttt{auth\_oauth} → provider OpenID Connect
+      \item \textbf{Flowise} : Client ID \texttt{flowise}, via le module d'authentification
+    \end{itemize}
+  \item Configurer les groupes et rôles (Admin, User, Readonly)
+  \item Activer \textbf{MFA} (OTP) pour tous les utilisateurs du realm
+  \item Federation Active Directory/M365 : Identity Providers → Microsoft (via Azure AD)
+\end{enumerate}
+
+\textbf{Configuration Grafana SSO (grafana.ini) :}
+\begin{lstlisting}[style=yamlstyle]
+[auth.generic_oauth]
+enabled = true
+name = Keycloak SSO
+client_id = grafana
+client_secret = ${GRAFANA_OIDC_SECRET}
+scopes = openid email profile roles
+auth_url = https://sso.votredomaine.com/realms/client-nom/protocol/openid-connect/auth
+token_url = https://sso.votredomaine.com/realms/client-nom/protocol/openid-connect/token
+api_url = https://sso.votredomaine.com/realms/client-nom/protocol/openid-connect/userinfo
+role_attribute_path = contains(roles[*], 'grafana-admin') && 'Admin' || 'Viewer'
+\end{lstlisting}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Application}} & \textcolor{white}{\textbf{Protocole d'intégration}} \\
+\midrule
+Grafana & Generic OAuth2 / OIDC (natif) \\
+\rowcolor{rowgray}
+Odoo & Module \texttt{auth\_oauth} (OpenID Connect) \\
+Flowise & OIDC via proxy d'authentification \\
+\rowcolor{rowgray}
+Azure AD & Fédération d'identité (les comptes M365 peuvent se connecter via Keycloak) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item Les utilisateurs voient uniquement le bouton « Se connecter avec votre compte d'entreprise »
+  \item La page de connexion Keycloak peut être customisée aux couleurs du client
+  \item La synchronisation M365 Azure AD permet d'utiliser les mêmes identifiants
+  \item En cas de problème Keycloak : chaque application conserve son propre fallback login
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que la connexion SSO fonctionne pour chaque application intégrée
+    \item[$\square$] Contrôler les utilisateurs actifs et supprimer les comptes inactifs
+    \item[$\square$] Vérifier la validité des tokens et la configuration des sessions (timeout)
+    \item[$\square$] Sauvegarder la configuration Keycloak (export realm JSON)
+    \item[$\square$] Mettre à jour l'image Keycloak (vérifier les breaking changes dans le changelog)
+  \end{itemize}
+\end{checklist}
+
+\end{document}

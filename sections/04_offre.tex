@@ -1,0 +1,136 @@
+% =============================================================
+%  Section 4 — Offre commerciale
+% =============================================================
+\section{Offre commerciale}
+
+\subsection{Pack Standard — Récurrence mensuelle}
+
+Le pack standard est le socle déployé \textbf{systématiquement} chez chaque client. Il assure la récurrence et couvre l'essentiel de la valeur perçue.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Composition et économie du Pack Standard}
+  \renewcommand{\arraystretch}{1.5}
+  \begin{tabularx}{\textwidth}{>{\bfseries}X p{2.5cm} p{2.5cm} p{1.8cm}}
+    \toprule
+    \rowcolor{tabheader}
+    \color{white}Service & \color{white}Coût réel/mois & \color{white}Facturation & \color{white}Marge \\
+    \midrule
+    Automatisation n8n managée & 15 € & 200–350 € & \textcolor{colgreen}{\textbf{\~{}93 \%}} \\
+    \rowcolor{rowgray}
+    Monitoring sécurité Wazuh & 45 € & 200–400 € & \textcolor{colgreen}{\textbf{\~{}80 \%}} \\
+    Dashboard dirigeant Grafana & Inclus VPS-1 & 100–200 € & \textcolor{colgreen}{\textbf{\~{}97 \%}} \\
+    \rowcolor{rowgray}
+    Rapport Secure Score mensuel & 0 € & 80–150 € & \textcolor{colgreen}{\textbf{100 \%}} \\
+    Backup managé Restic/B2 & 8 € & 80–150 € & \textcolor{colgreen}{\textbf{\~{}90 \%}} \\
+    \midrule
+    \rowcolor{navydark}
+    \color{white}\textbf{Total Pack Standard} & \color{white}\textbf{\~{}68 €} & \color{white}\textbf{660–1 250 €} & \color{white}\textbf{\~{}90 \%} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{pointcle}
+  Une fois l'infrastructure mutualisée amortie (dès le 2\textsuperscript{e} client), la marge nette dépasse \textbf{92 \%} sur le pack standard. Le coût marginal d'un nouveau client est quasi nul sur n8n et Grafana.
+\end{pointcle}
+
+\subsection{Options Premium — Forte valeur perçue}
+
+\subsubsection{Option 1 — Assistant IA Métier (Flowise + RAG)}
+
+\textbf{Ce que voit le client :} un assistant dans Teams qui répond aux questions sur ses contrats, procédures, clients en langage naturel.
+
+\textbf{Ce que nous déployons :} Flowise self-hosted + indexation automatique de SharePoint/Odoo via n8n + GPT-4o ou Azure OpenAI.
+
+\begin{table}[htbp]
+  \centering\renewcommand{\arraystretch}{1.3}
+  \begin{tabularx}{\textwidth}{X X X}
+    \toprule
+    \textbf{Coût réel/mois} & \textbf{Setup} & \textbf{Facturation mensuelle} \\
+    \midrule
+    20–50 € (VPS + API) & 1 500–3 000 € & 400–800 € \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Option 2 — Automatisation Devis/Factures + CRM IA}
+
+\textbf{Ce que voit le client :} devis pré-rempli depuis un email entrant, relances automatiques intelligentes, synthèse CRM hebdomadaire.
+
+\textbf{Ce que nous déployons :} Graph API → n8n → GPT-4o extrait les infos → écriture Odoo API + scheduler hebdomadaire.
+
+\begin{table}[htbp]
+  \centering\renewcommand{\arraystretch}{1.3}
+  \begin{tabularx}{\textwidth}{X X X}
+    \toprule
+    \textbf{Coût réel/mois} & \textbf{Setup} & \textbf{Facturation mensuelle} \\
+    \midrule
+    30–60 € (infra + API) & 1 000–2 500 € & 300–600 € \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Option 3 — Pack Cyber Complet}
+
+\textbf{Ce que voit le client :} rapport d'audit initial, 1 simulation phishing trimestrielle, dashboard sécurité mensuel avec score d'évolution, alerte SMS/email immédiate si incident.
+
+\textbf{Ce que nous déployons :} Secure Score API + GoPhish + Wazuh + n8n orchestrant tous les rapports PDF automatiques.
+
+\begin{table}[htbp]
+  \centering\renewcommand{\arraystretch}{1.3}
+  \begin{tabularx}{\textwidth}{X X X}
+    \toprule
+    \textbf{Coût réel/mois} & \textbf{Setup} & \textbf{Facturation mensuelle} \\
+    \midrule
+    80–120 € & 800–1 500 € & 500–1 200 € \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Outils à éviter}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Outils exclus du périmètre}
+  \renewcommand{\arraystretch}{1.4}
+  \begin{tabularx}{\textwidth}{>{\bfseries}p{3cm} X}
+    \toprule
+    \rowcolor{tabheader}
+    \color{white}Outil & \color{white}Raison d'exclusion \\
+    \midrule
+    Zapier & Trop cher, dépendance SaaS totale, marge faible — remplacé par n8n \\
+    \rowcolor{rowgray}
+    Make.com & Même problème, zéro contrôle de l'infrastructure \\
+    Nextcloud & Doublon avec SharePoint déjà en place → friction client forte \\
+    \rowcolor{rowgray}
+    HubSpot & Duplication Odoo, coût prohibitif, formation requise \\
+    Datadog & Excellent mais SaaS coûteux — Grafana + Wazuh suffisent \\
+    \rowcolor{rowgray}
+    Azure Sentinel & Expertise longue, coût explosif selon volume de logs \\
+    Power BI & Interface complexe, formation requise → Metabase ou Grafana \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Projection de revenus récurrents}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Simulation ARR selon portefeuille client}
+  \renewcommand{\arraystretch}{1.5}
+  \begin{tabularx}{\textwidth}{>{\centering\arraybackslash}p{2cm} >{\centering\arraybackslash}p{3cm} >{\centering\arraybackslash}p{3cm} >{\centering\arraybackslash}X}
+    \toprule
+    \rowcolor{tabheader}
+    \color{white}Clients & \color{white}MRR (Pack Std.) & \color{white}MRR (avec options) & \color{white}ARR estimé \\
+    \midrule
+    5 & 3 300–6 250 € & 5 000–10 000 € & 60–120 k€ \\
+    \rowcolor{rowgray}
+    10 & 6 600–12 500 € & 10 000–20 000 € & 120–240 k€ \\
+    15 & 9 900–18 750 € & 15 000–30 000 € & \textbf{180–360 k€} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{pointcle}
+  À 10 clients Pack Standard, l'ARR atteint \textbf{80–150 k€} pour environ 40–60 h/mois de maintenance cumulée (2–3 jours/semaine à deux). La montée en charge est linéaire sur n8n grâce à la mutualisation.
+\end{pointcle}

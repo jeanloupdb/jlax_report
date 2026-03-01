@@ -1,0 +1,166 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{n8n}
+\newcommand{\ficheCategorie}{Orchestration \& Automatisation}
+\newcommand{\fichePack}{Core Pack}
+\newcommand{\fichePackColor}{colgreen}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche n8n},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+n8n est le moteur central de toute la stack Jlax Expertise. C'est un outil d'automatisation de workflows open-source, auto-hébergé, qui connecte toutes les briques entre elles : Microsoft 365, Odoo, OpenAI, Wazuh, Grafana, et toute API REST/webhook. Un flux n8n peut remplacer plusieurs heures de travail manuel quotidien.
+
+\begin{pointcle}
+  n8n est le \textbf{cerveau invisible} de la modernisation : le client continue d'utiliser Outlook, Teams et Odoo exactement comme avant — n8n fait le travail en arrière-plan.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Mes devis se pré-remplissent depuis mes emails, mes relances partent toutes seules, mes fiches clients se mettent à jour sans que je touche à quoi que ce soit. Mon équipe passe moins de temps sur les tâches répétitives et plus de temps sur les vrais clients. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item \textbf{3–5 h/semaine} libérées par collaborateur sur la saisie et les tâches répétitives
+  \item Zéro oubli de relance client : les workflows s'exécutent 24h/24
+  \item Données toujours synchronisées entre Outlook, Odoo et Teams
+  \item Réponses aux emails structurées 3× plus vite grâce à l'IA intégrée
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} VPS Hetzner CX21 minimum (2 vCPU, 4 GB RAM), Docker + Docker Compose installés, Traefik configuré (reverse proxy SSL), domaine ou sous-domaine dédié (\texttt{n8n.votredomaine.com}).
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — n8n + PostgreSQL}]
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: n8n
+      POSTGRES_USER: n8n
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "5678:5678"
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: n8n
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+      N8N_HOST: n8n.votredomaine.com
+      N8N_PROTOCOL: https
+      WEBHOOK_URL: https://n8n.votredomaine.com/
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      GENERIC_TIMEZONE: Europe/Paris
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_USER}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_PASSWORD}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=Host(`n8n.votredomaine.com`)"
+      - "traefik.http.routers.n8n.tls.certresolver=letsencrypt"
+
+volumes:
+  postgres_data:
+  n8n_data:
+\end{lstlisting}
+
+\begin{lstlisting}[style=terminal, caption={Démarrage et vérification}]
+# Générer des secrets sécurisés
+openssl rand -hex 32   # pour N8N_ENCRYPTION_KEY
+openssl rand -base64 16  # pour POSTGRES_PASSWORD
+
+# Créer le fichier .env
+cat > .env << EOF
+POSTGRES_PASSWORD=VotreMotDePasse
+N8N_ENCRYPTION_KEY=VotreCleEncryption
+N8N_USER=admin
+N8N_PASSWORD=VotreMotDePasseAdmin
+EOF
+
+# Lancer les conteneurs
+docker compose up -d
+
+# Vérifier les logs
+docker compose logs -f n8n
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Post-installation (interface web \texttt{https://n8n.votredomaine.com}) :}
+\begin{enumerate}
+  \item Créer le compte administrateur initial
+  \item \textbf{Settings → Community Nodes} : installer \texttt{n8n-nodes-base} (inclus par défaut)
+  \item \textbf{Credentials} → ajouter les credentials dans cet ordre :
+    \begin{itemize}
+      \item Microsoft OAuth2 (Graph API) — voir fiche graph\_api
+      \item OpenAI API Key — voir fiche openai\_api
+      \item Odoo API (URL + clé API)
+    \end{itemize}
+  \item \textbf{Settings → General} : configurer le fuseau horaire (Europe/Paris)
+  \item Activer les webhooks publics pour les intégrations entrantes
+\end{enumerate}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Connexion}} & \textcolor{white}{\textbf{Usage}} \\
+\midrule
+MS Graph API & Lecture emails Outlook, envoi, création d'événements Teams \\
+\rowcolor{rowgray}
+OpenAI API & Résumé d'emails, génération de texte, classification \\
+Odoo & Création/MAJ de contacts, opportunités, devis via API REST \\
+\rowcolor{rowgray}
+Wazuh & Réception d'alertes sécurité → notification Teams/email \\
+Grafana & Push de métriques via API InfluxDB \\
+\rowcolor{rowgray}
+GoPhish & Déclenchement de campagnes, réception des résultats \\
+Traefik & Expose les webhooks n8n via SSL automatique \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item n8n n'est \textbf{jamais installé sur les postes clients} — uniquement sur le VPS Jlax
+  \item Les workflows s'exécutent en arrière-plan : le client voit les résultats dans ses outils habituels (Outlook, Teams, Odoo)
+  \item L'URL n8n n'est \textbf{jamais partagée} avec le client — accès restreint par Basic Auth + IP whitelist si nécessaire
+  \item Pour chaque client : un \textbf{dossier de workflows séparé} (multi-tenant sur une même instance possible jusqu'à 5–10 clients)
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que tous les workflows actifs sont en statut « Active »
+    \item[$\square$] Consulter l'onglet Executions : taux d'erreur < 1\%
+    \item[$\square$] Vérifier l'espace disque du volume PostgreSQL (\texttt{docker system df})
+    \item[$\square$] Mettre à jour l'image : \texttt{docker compose pull \&\& docker compose up -d}
+    \item[$\square$] Sauvegarder les workflows exportés (JSON) vers Backblaze B2 via Restic
+  \end{itemize}
+\end{checklist}
+
+\end{document}

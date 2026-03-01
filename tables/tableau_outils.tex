@@ -1,0 +1,131 @@
+% =============================================================
+%  Tableau stratégique — Vue unifiée (allégée) + liens fiches
+%  7 colonnes : Outil | Catégorie | Impact | €/mois | ROI | Pack | Fiche
+% =============================================================
+
+\begin{footnotesize}
+\renewcommand{\arraystretch}{1.5}
+\setlength{\tabcolsep}{4pt}
+
+\begin{longtable}{>{\bfseries}p{2.2cm} p{2.0cm} p{1.6cm} p{1.4cm} p{1.2cm} p{2.2cm} p{1.3cm}}
+
+\caption{Vue stratégique — Outils, impact \& pack} \label{tab:outils} \\
+
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} &
+\textcolor{white}{\textbf{Catégorie}} &
+\textcolor{white}{\textbf{Impact}} &
+\textcolor{white}{\textbf{€/mois}} &
+\textcolor{white}{\textbf{ROI}} &
+\textcolor{white}{\textbf{Pack}} &
+\textcolor{white}{\textbf{Fiche}} \\
+\midrule
+\endfirsthead
+\multicolumn{7}{c}{\tablename\ \thetable{} — suite} \\[2pt]
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} &
+\textcolor{white}{\textbf{Catégorie}} &
+\textcolor{white}{\textbf{Impact}} &
+\textcolor{white}{\textbf{€/mois}} &
+\textcolor{white}{\textbf{ROI}} &
+\textcolor{white}{\textbf{Pack}} &
+\textcolor{white}{\textbf{Fiche}} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+
+% ── CORE PACK ─────────────────────────────────────────────────
+\multicolumn{7}{l}{\cellcolor{colgreen!12}\textcolor{colgreen}{\textbf{$\triangleright$ Core Pack — Socle de modernisation}}} \\[2pt]
+
+\rowcolor{colgreen!5}
+n8n & Automat. & \invisible & 15–25\,€ & Fort & \textcolor{colgreen}{\textbf{Core Pack}} &
+  \href{run:fiches/n8n.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+MS Graph API & Backbone M365 & \invisible & 0–30\,€ & Fort & \textcolor{colgreen}{\textbf{Core Pack}} &
+  \href{run:fiches/graph_api.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\rowcolor{colgreen!5}
+OpenAI API & IA générative & \invisible & 20–80\,€ & Fort & \textcolor{colgreen}{\textbf{Core Pack}} &
+  \href{run:fiches/openai_api.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+GoPhish & Cybersécurité & \leger & 5–10\,€ & Fort & \textcolor{colgreen}{\textbf{Core Pack}} &
+  \href{run:fiches/gophish.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\rowcolor{colgreen!5}
+Wazuh & SIEM / EDR & \leger & 40–60\,€ & Fort & \textcolor{colgreen}{\textbf{Core Pack}} &
+  \href{run:fiches/wazuh.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+CrowdSec & IDS collaboratif & \invisible & 0–10\,€ & Fort & \textcolor{colgreen}{\textbf{Core Pack}} &
+  \href{run:fiches/crowdsec.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\rowcolor{colgreen!5}
+Uptime Kuma & Monitoring & \invisible & 5\,€ & Moyen & \textcolor{colgreen}{\textbf{Core Pack}} &
+  \href{run:fiches/uptime_kuma.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+Grafana + InfluxDB & Dashboard & \invisible & 10–15\,€ & Fort & \textcolor{colgreen}{\textbf{Core Pack}} &
+  \href{run:fiches/grafana.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\rowcolor{colgreen!5}
+Vaultwarden & Mots de passe & \leger & 5\,€ & Fort & \textcolor{colgreen}{\textbf{Core Pack}} &
+  \href{run:fiches/vaultwarden.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+Restic + B2 & Sauvegardes & \invisible & 5–15\,€ & Fort & \textcolor{colgreen}{\textbf{Core Pack}} &
+  \href{run:fiches/restic_b2.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\rowcolor{colgreen!5}
+Secure Score API & Audit M365 & \invisible & 0\,€ & Fort & \textcolor{colgreen}{\textbf{Core Pack}} &
+  \href{run:fiches/secure_score.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+% ── OPTIONS PREMIUM ───────────────────────────────────────────
+\multicolumn{7}{l}{\cellcolor{navylight!10}\textcolor{navylight}{\textbf{$\triangleright$ Options Premium — Valeur perçue élevée}}} \\[2pt]
+
+\rowcolor{navylight!5}
+Flowise & Assistant IA & \invisible & 10\,€ & Fort & \textcolor{navylight}{\textbf{Premium}} &
+  \href{run:fiches/flowise.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\rowcolor{navylight!5}
+Metabase & Reporting auto & \invisible & 10–15\,€ & Fort & \textcolor{navylight}{\textbf{Premium}} &
+  \href{run:fiches/metabase.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\rowcolor{navylight!5}
+Paperless-ngx & GED intelligente & \leger & 10\,€ & Moyen & \textcolor{navylight}{\textbf{Premium}} &
+  \href{run:fiches/paperless.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\rowcolor{navylight!5}
+Odoo Community & CRM / ERP & \leger & 20–40\,€ & Fort & \textcolor{navylight}{\textbf{Premium}} &
+  \href{run:fiches/odoo.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\rowcolor{navylight!5}
+Typebot & Chatbot web & \leger & 10\,€ & Moyen & \textcolor{navylight}{\textbf{Premium}} &
+  \href{run:fiches/typebot.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\rowcolor{navylight!5}
+Azure OpenAI & IA (RGPD) & \invisible & 30–150\,€ & Fort & \textcolor{navylight}{\textbf{Premium}} &
+  \href{run:fiches/azure_openai.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+% ── R&D ───────────────────────────────────────────────────────
+\multicolumn{7}{l}{\cellcolor{colgold!10}\textcolor{colgold}{\textbf{$\triangleright$ R\&D — Valeur différenciante à venir}}} \\[2pt]
+
+\rowcolor{colgold!5}
+Keycloak & SSO / Identité & \leger & 10–15\,€ & Moyen & \textcolor{colgold}{\textbf{R\&D}} &
+  \href{run:fiches/keycloak.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\rowcolor{colgold!5}
+Ollama & IA locale (LLM) & \invisible & 30–80\,€ & Fort & \textcolor{colgold}{\textbf{R\&D}} &
+  \href{run:fiches/ollama.pdf}{\textcolor{navylight}{\scriptsize Fiche~→}} \\
+
+\end{longtable}
+\end{footnotesize}
+
+\vspace{0.5em}
+{\footnotesize \textit{%
+  Impact : \textcolor{colgreen}{\textbullet}~Invisible (aucune action client) \quad
+  \textcolor{colorange}{\textbullet}~Léger (friction minimale) \quad
+  ROI : évalué sur la base d'un client PME de 10–30 personnes. \\
+  Cliquer sur \textcolor{navylight}{Fiche~→} pour ouvrir la fiche technique dédiée (installation + valeur client).%
+}}

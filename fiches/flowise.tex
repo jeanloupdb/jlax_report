@@ -1,0 +1,129 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Flowise}
+\newcommand{\ficheCategorie}{Assistant IA — RAG sur Documents Internes}
+\newcommand{\fichePack}{Option Premium}
+\newcommand{\fichePackColor}{navylight}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Flowise},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Flowise est une plateforme no-code de création d'assistants IA basés sur des documents internes (RAG — Retrieval Augmented Generation). Il permet de créer un assistant capable de répondre à des questions précises en s'appuyant sur la documentation du client (contrats, procédures, emails, SharePoint). L'assistant est intégré directement dans Teams ou sur le site web — le client pose une question en langage naturel et reçoit une réponse sourcée en 3 secondes.
+
+\begin{pointcle}
+  L'effet Wow de Flowise est maximal : voir un assistant répondre \textit{« la clause de résiliation est à l'article 8.3 de votre contrat ABC du 15/01/2024 »} en 3 secondes convainc instantanément n'importe quel dirigeant.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« Je pose une question à mon assistant Teams sur un contrat de 2021 et il me cite la bonne clause en 4 secondes — avec le numéro de page. Avant, je passais 20 minutes à chercher dans mes dossiers SharePoint. Maintenant j'ai l'information en 10 secondes. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item \textbf{-2 h/jour} de recherche documentaire pour les équipes
+  \item Réponses cohérentes et traçables (sources citées automatiquement)
+  \item Onboarding des nouveaux employés accéléré : l'assistant répond aux questions procédures
+  \item Assistance juridique de premier niveau : retrouver clauses, délais, conditions
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Prérequis :} Docker sur VPS-1 Core, clé OpenAI API ou Azure OpenAI, Traefik pour HTTPS.
+
+\begin{lstlisting}[style=yamlstyle, caption={docker-compose.yml — Flowise}]
+version: "3.8"
+services:
+  flowise:
+    image: flowiseai/flowise:latest
+    restart: always
+    environment:
+      PORT: 3000
+      FLOWISE_USERNAME: ${FLOWISE_USER}
+      FLOWISE_PASSWORD: ${FLOWISE_PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      DATABASE_PATH: /root/.flowise
+      SECRETKEY_PATH: /root/.flowise
+    volumes:
+      - flowise_data:/root/.flowise
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.flowise.rule=Host(`ai.votredomaine.com`)"
+      - "traefik.http.routers.flowise.tls.certresolver=letsencrypt"
+      - "traefik.http.services.flowise.loadbalancer.server.port=3000"
+
+volumes:
+  flowise_data:
+\end{lstlisting}
+
+\section{Configuration de base}
+
+\textbf{Création d'un assistant RAG sur SharePoint (étapes Flowise) :}
+\begin{enumerate}
+  \item Flowise → \textbf{Document Loaders} → SharePoint Online Loader
+    \begin{itemize}
+      \item Credentials : App ID + Secret Azure AD (mêmes que Graph API)
+      \item Site URL, Library Path : sélectionner le dossier SharePoint cible
+    \end{itemize}
+  \item \textbf{Text Splitters} → Recursive Character Text Splitter (chunk : 1000 tokens)
+  \item \textbf{Embeddings} → OpenAI Embeddings (\texttt{text-embedding-3-small})
+  \item \textbf{Vector Store} → In-Memory (simple) ou Pinecone (production)
+  \item \textbf{LLM} → ChatOpenAI (\texttt{gpt-4o-mini})
+  \item \textbf{Chain} → Conversational Retrieval QA Chain
+  \item Publier → copier l'URL d'embed ou le chatbot ID pour Teams
+\end{enumerate}
+
+\textbf{Intégration dans Teams (bot) :}
+\begin{enumerate}
+  \item Créer une Power Automate flow ou utiliser le webhook Flowise directement
+  \item Dans Teams : \textbf{Apps → Build an app → Incoming webhook} vers Flowise
+  \item Alternative : embed HTML sur intranet ou site interne SharePoint
+\end{enumerate}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Rôle}} \\
+\midrule
+OpenAI API & Embeddings et génération de réponses (ou Azure OpenAI pour RGPD) \\
+\rowcolor{rowgray}
+MS Graph API & Ingestion automatique des nouveaux documents SharePoint \\
+n8n & Réindexation automatique quand un nouveau document est ajouté \\
+\rowcolor{rowgray}
+Traefik & Exposition sécurisée de l'interface Flowise et des chatbots \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item L'interface Flowise (construction de flows) est accessible uniquement à Jlax
+  \item Le client voit uniquement le \textbf{chatbot final} — dans Teams ou sur son site
+  \item Le nom "Flowise" n'est jamais mentionné : l'assistant s'appelle "Assistant [Client]"
+  \item Pour les données RGPD : remplacer OpenAI par \textbf{Azure OpenAI} (même configuration)
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier que l'assistant répond correctement à 3 questions de test
+    \item[$\square$] Contrôler que la réindexation automatique fonctionne (nouveaux documents)
+    \item[$\square$] Vérifier la consommation OpenAI liée à Flowise (embeddings + requêtes)
+    \item[$\square$] Mettre à jour l'image : \texttt{docker compose pull \&\& docker compose up -d}
+    \item[$\square$] Recueillir le feedback du client sur la qualité des réponses
+  \end{itemize}
+\end{checklist}
+
+\end{document}

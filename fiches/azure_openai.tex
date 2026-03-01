@@ -1,0 +1,143 @@
+\documentclass[11pt, a4paper]{article}
+\input{_preamble}
+
+\newcommand{\ficheNom}{Azure OpenAI}
+\newcommand{\ficheCategorie}{IA Générative RGPD — Données en Europe}
+\newcommand{\fichePack}{Option Premium}
+\newcommand{\fichePackColor}{navylight}
+
+\hypersetup{
+  pdftitle={Jlax Expertise — Fiche Azure OpenAI},
+  pdfauthor={Jlax Expertise}
+}
+
+\begin{document}
+\ficheHeader
+
+\section*{En bref}
+Azure OpenAI est la version souveraine de l'API OpenAI hébergée dans les datacenters Microsoft en Union Européenne. Fonctionnellement identique à l'API OpenAI classique (mêmes modèles GPT-4o, GPT-4o-mini), elle offre une garantie RGPD stricte : les données traitées ne quittent jamais l'UE et ne sont pas utilisées pour l'entraînement des modèles. À utiliser pour les clients sensibles : cabinets juridiques, médicaux, RH, finance.
+
+\begin{pointcle}
+  Azure OpenAI est un \textbf{argument commercial fort} avec les grands comptes et les secteurs réglementés. La différence de prix vs OpenAI standard est marginale (+10–20\%) pour une conformité RGPD garantie contractuellement par Microsoft.
+\end{pointcle}
+
+\section{Ce que voit le client}
+
+\begin{clientbox}
+  \textit{« J'ai les mêmes capacités IA qu'OpenAI — résumés, rédaction, analyse — mais mes données ne quittent jamais l'Union Européenne. Mon avocat et mon DPO ont validé l'usage. Je peux mettre en place l'IA sur nos dossiers clients sensibles sans risque juridique. »}
+\end{clientbox}
+
+\textbf{Gains mesurables :}
+\begin{itemize}
+  \item \textbf{Conformité RGPD} stricte et contractuelle avec Microsoft
+  \item Argument de confiance décisif pour les clients grands comptes et secteurs réglementés
+  \item Mêmes performances que l'API OpenAI — \textbf{zéro compromis technique}
+  \item Traitement possible de données personnelles, médicales, juridiques
+\end{itemize}
+
+\section{Installation technique}
+
+\textbf{Étape 1 — Créer la ressource Azure OpenAI :}
+\begin{lstlisting}[style=terminal, caption={Azure Portal — Création de la ressource}]
+# Azure Portal → Créer une ressource → Azure OpenAI
+# Paramètres :
+#   Subscription: Votre abonnement Azure
+#   Resource group: rg-jlax-client-nom
+#   Region: France Central (ou Sweden Central pour EU)
+#   Name: jlax-client-nom-openai
+#   Pricing tier: Standard S0
+# → Valider et attendre la création (2-5 minutes)
+\end{lstlisting}
+
+\textbf{Étape 2 — Déployer un modèle :}
+\begin{lstlisting}[style=terminal]
+# Azure OpenAI Studio (oai.azure.com) → Deployments → Create
+# Model: gpt-4o-mini (recommandé) ou gpt-4o (tâches complexes)
+# Deployment name: gpt4omini-prod  (note: pas de points dans le nom)
+# Tokens Per Minute Rate Limit: 100K TPM (ajuster selon usage)
+\end{lstlisting}
+
+\textbf{Étape 3 — Récupérer les identifiants :}
+\begin{lstlisting}[style=terminal]
+# Azure OpenAI Studio → Settings → Resource
+# Endpoint: https://jlax-client-nom-openai.openai.azure.com/
+# API Key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (Keys and Endpoint)
+# Deployment name: gpt4omini-prod
+# API Version: 2024-02-01 (vérifier la dernière version stable)
+\end{lstlisting}
+
+\textbf{Étape 4 — Configurer dans n8n :}
+\begin{enumerate}
+  \item n8n → Credentials → Add → \textbf{Azure OpenAI}
+  \item Resource Name : \texttt{jlax-client-nom-openai}
+  \item API Key : coller la clé Azure
+  \item Dans les nodes OpenAI : sélectionner \textbf{Azure} comme provider
+  \item Deployment Name : \texttt{gpt4omini-prod}
+\end{enumerate}
+
+\section{Configuration de base}
+
+\textbf{Différences API vs OpenAI standard (adapter les workflows n8n) :}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{3.5cm} X X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Paramètre}} & \textcolor{white}{\textbf{OpenAI classique}} & \textcolor{white}{\textbf{Azure OpenAI}} \\
+\midrule
+Endpoint URL & \texttt{api.openai.com} & \texttt{*.openai.azure.com} \\
+\rowcolor{rowgray}
+Nom du modèle & \texttt{gpt-4o-mini} & nom du déploiement \\
+Auth header & \texttt{Authorization: Bearer} & \texttt{api-key:} \\
+\rowcolor{rowgray}
+Données en EU & Non (US par défaut) & Oui (choix de région) \\
+Formation modèle & Possible & Non (contractuel) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Utilisation dans Flowise :}
+\begin{itemize}
+  \item Flowise → Credentials → Add → \textbf{Azure ChatOpenAI}
+  \item Renseigner les mêmes paramètres : Resource Name, API Key, Deployment Name
+  \item Tous les assistants RAG peuvent basculer d'OpenAI à Azure en changeant la credential
+\end{itemize}
+
+\section{Intégration dans la stack}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\linewidth}{>{\bfseries}p{2.8cm} X}
+\toprule
+\rowcolor{tabheader}
+\textcolor{white}{\textbf{Outil}} & \textcolor{white}{\textbf{Usage avec Azure OpenAI}} \\
+\midrule
+n8n & Remplacement transparent d'OpenAI API (même nodes, autre credential) \\
+\rowcolor{rowgray}
+Flowise & Embeddings + chat pour les assistants RAG sur données sensibles \\
+MS Graph API & Traitement des emails/documents M365 avec IA souveraine EU \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Rendre invisible côté client}
+
+\begin{itemize}
+  \item Le client ne voit pas la différence entre OpenAI et Azure OpenAI — même résultats
+  \item L'argument de vente : « \textbf{nos IA sont hébergées en France} » — fort auprès des directions
+  \item La facturation Azure OpenAI est incluse dans la facture mensuelle Jlax
+  \item Basculement OpenAI → Azure OpenAI : changer uniquement la credential dans n8n/Flowise
+\end{itemize}
+
+\begin{checklist}
+  \begin{itemize}
+    \item[$\square$] Vérifier la consommation mensuelle dans Azure Portal → Cost Management
+    \item[$\square$] Contrôler les limites de débit (TPM) : aucun throttling dans les logs n8n
+    \item[$\square$] Vérifier que les déploiements de modèles sont toujours actifs
+    \item[$\square$] Mettre à jour l'API Version si une nouvelle version stable est disponible
+    \item[$\square$] Renouveler les clés API si rotation de sécurité requise (tous les 6 mois)
+  \end{itemize}
+\end{checklist}
+
+\end{document}
