@@ -37,8 +37,11 @@ else
   exit 1
 fi
 
+echo "▶  $COMPOSE pull..."
+$COMPOSE -f docker-compose.deploy.yml pull
+
 echo "▶  $COMPOSE up..."
-$COMPOSE -f docker-compose.deploy.yml up -d --pull always
+$COMPOSE -f docker-compose.deploy.yml up -d
 
 echo ""
 echo "✅  Conteneur démarré sur 127.0.0.1:8080"
